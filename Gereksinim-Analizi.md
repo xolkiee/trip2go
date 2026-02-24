@@ -124,4 +124,4 @@
 # Gereksinim Dağılımları
 
 1. [Furkan Burak Öztürk'ün Gereksinimleri](Furkan-Burak-Öztürk/Furkan-Burak-Öztürk-Gereksinimler.md)
-2. [...'nın Gereksinimleri](Grup-Uyesi-2/Grup-Uyesi-2-Gereksinimler.md)
+2. [Ömer Arı'nın Gereksinimleri](Ömer-Arı/Ömer-Arı-Gereksinimler.md)
