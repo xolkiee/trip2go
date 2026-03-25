@@ -1,0 +1,27 @@
+:root {
+  --primary-blue: #0b2261;
+  --primary-orange: #d33b2b;
+  --primary-orange-hover: #b82f22;
+  --bg-color: #f4f5f9;
+  --text-dark: #333333;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-family);
+}

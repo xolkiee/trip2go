@@ -1,0 +1,144 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import './AdminTripCreate.css'; // Aynı stilleri kullanıyoruz
+
+const AdminTripUpdate = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    departure: '',
+    destination: '',
+    date: '',
+    time: '',
+    price: '',
+    totalSeats: ''
+  });
+
+  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false);
+
+  // Normalde burada bir useEffect ile id'ye göre DB'den mevcut sefer bilgileri çekilir.
+  // Biz dummy data (sahte veri) kullanacağımız için örnek verilerle dolduruyoruz.
+  useEffect(() => {
+    if (id) {
+      setFormData({
+        departure: 'İstanbul',
+        destination: 'Ankara',
+        date: '2026-04-01',
+        time: '14:00',
+        price: '300',
+        totalSeats: '40'
+      });
+    }
+  }, [id]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus({ type: '', message: '' });
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/trips/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setStatus({ type: 'success', message: 'Sefer başarıyla güncellendi!' });
+      } else {
+        setStatus({ type: 'error', message: result.message || 'Sefer güncellenirken bir hata oluştu.' });
+      }
+    } catch (error) {
+      console.error("API Error:", error);
+      setStatus({ type: 'error', message: 'Sunucuya bağlanılamadı. Lütfen backendin çalıştığından emin olun.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="admin-page">
+      <header className="admin-header">
+        <div className="header-container">
+          <h1 className="logo"><span>Trip<span>2Go</span></span> <span className="admin-badge">Admin Paneli</span></h1>
+        </div>
+      </header>
+      
+      <main className="admin-main">
+        <div className="form-card">
+          <div className="card-header">
+            <h2>Sefer Bilgisini Güncelle</h2>
+            <p>Sistemdeki mevcut bir seferi düzenliyorsunuz. (ID: {id})</p>
+          </div>
+          
+          <div className="card-body">
+            {status.message && (
+              <div className={`alert alert-${status.type}`}>
+                {status.message}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="trip-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="departure">Kalkış Yeri</label>
+                  <input type="text" id="departure" name="departure" value={formData.departure} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="destination">Varış Yeri</label>
+                  <input type="text" id="destination" name="destination" value={formData.destination} onChange={handleChange} required />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="date">Tarih</label>
+                  <input type="date" id="date" name="date" value={formData.date} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="time">Saat</label>
+                  <input type="time" id="time" name="time" value={formData.time} onChange={handleChange} required />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="price">Bilet Fiyatı (₺)</label>
+                  <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} min="0" required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="totalSeats">Toplam Koltuk Sayısı</label>
+                  <input type="number" id="totalSeats" name="totalSeats" value={formData.totalSeats} onChange={handleChange} min="1" required />
+                </div>
+              </div>
+
+              <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+                <button type="button" className="submit-btn" style={{ backgroundColor: '#6c757d' }} onClick={() => navigate('/admin/trips/new')}>
+                   Vazgeç ve Yeni Ekle
+                </button>
+                <button type="submit" className="submit-btn" disabled={loading}>
+                  {loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default AdminTripUpdate;
