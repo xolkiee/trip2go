@@ -9,10 +9,14 @@ app.use(cors());
 app.use(express.json());
 
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
-  .catch((err) => console.error('MongoDB bağlantı hatası:', err));
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
+//   .catch((err) => console.error('MongoDB bağlantı hatası:', err));
 
+
+// Routes
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('Trip2Go API Başarıyla Çalışıyor!');
