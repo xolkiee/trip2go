@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Auth.css'; // Reusing the Auth styling for consistency
+import { useNavigate, Link } from 'react-router-dom';
+import './Auth.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
-  const [step, setStep] = useState(1); // 1 = request email, 2 = enter token + new pass
+  const [step, setStep] = useState(1);
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -16,6 +17,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setLoading(true);
 
     try {
       const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
@@ -25,12 +27,14 @@ const ForgotPassword = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) throw new Error(data.message || 'Hata oluştu.');
 
       setSuccessMsg(data.message + (data.resetToken ? ` (Demo Token: ${data.resetToken})` : ''));
-      setStep(2); // Move to token input step
+      setStep(2);
     } catch (err) {
       setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,6 +42,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setLoading(true);
 
     try {
       const response = await fetch('http://localhost:5000/api/auth/reset-password', {
@@ -47,50 +52,59 @@ const ForgotPassword = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) throw new Error(data.message || 'Şifre güncellenemedi.');
 
-      setSuccessMsg(data.message);
+      setSuccessMsg("Şifre başarıyla güncellendi! Giriş yapabilirsiniz.");
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-page-container">
-      <div className="auth-glass-card" style={{ maxWidth: '500px', minHeight: '400px' }}>
-        
-        <div className="auth-form-section sign-in" style={{ width: '100%', position:'relative', zIndex: 10 }}>
-          {step === 1 ? (
-            <form className="auth-form" onSubmit={handleRequestToken}>
-              <h1 className="auth-title" style={{textAlign:'center'}}>Şifremi Unuttum</h1>
-              <p className="auth-subtitle" style={{textAlign:'center'}}>Endişelenmeyin! E-posta adresinizi girin.</p>
-              
-              {errorMsg && <div className="error-msg">{errorMsg}</div>}
-              {successMsg && <div className="success-msg">{successMsg}</div>}
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>{step === 1 ? 'Şifremi Unuttum' : 'Yeni Şifre Belirle'}</h2>
+          <p>{step === 1 ? 'Endişelenmeyin! E-posta adresinizi girin.' : 'Doğrulama kodunu ve yeni şifrenizi girin.'}</p>
+        </div>
 
-              <div className="input-group">
-                <input type="email" placeholder="Kayıtlı E-Posta Adresiniz" className="auth-input" value={email} onChange={e => setEmail(e.target.value)} required />
+        <div className="auth-body">
+          {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
+          {successMsg && <div className="alert alert-success">{successMsg}</div>}
+
+          {step === 1 ? (
+            <form onSubmit={handleRequestToken} className="auth-form">
+              <div className="form-group">
+                <label>Kayıtlı E-Posta Adresiniz</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
-              <button type="submit" className="auth-btn" style={{width:'100%'}}>Sıfırlama Linki Gönder</button>
               
-              <button type="button" className="auth-btn ghost" style={{width:'100%', marginTop:'15px', color:'#fff'}} onClick={() => navigate('/login')}>Giriş Yap'a Dön</button>
+              <button type="submit" className="auth-submit-btn" disabled={loading}>
+                {loading ? 'Gönderiliyor...' : 'Sıfırlama Linki Gönder'}
+              </button>
+              
+              <div className="admin-login-link">
+                <Link to="/login">Giriş Yap Ekranına Dön</Link>
+              </div>
             </form>
           ) : (
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <h1 className="auth-title" style={{textAlign:'center'}}>Yeni Şifre</h1>
-              <p className="auth-subtitle" style={{textAlign:'center'}}>Token bilginizi ve yeni şifrenizi girin.</p>
-              
-              {errorMsg && <div className="error-msg">{errorMsg}</div>}
-              {successMsg && <div className="success-msg">{successMsg}</div>}
+            <form onSubmit={handleResetPassword} className="auth-form">
+              <div className="form-group">
+                <label>Doğrulama Kodu (Token)</label>
+                <input type="text" value={resetToken} onChange={e => setResetToken(e.target.value)} required />
+              </div>
 
-              <div className="input-group">
-                <input type="text" placeholder="Sıfırlama Token'ı" className="auth-input" value={resetToken} onChange={e => setResetToken(e.target.value)} required />
+              <div className="form-group">
+                <label>Yeni Şifreniz</label>
+                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
               </div>
-              <div className="input-group">
-                <input type="password" placeholder="Yeni Şifre" className="auth-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-              </div>
-              <button type="submit" className="auth-btn" style={{width:'100%'}}>Şifreyi Güncelle</button>
+              
+              <button type="submit" className="auth-submit-btn" disabled={loading}>
+                {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+              </button>
             </form>
           )}
         </div>

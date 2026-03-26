@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import './Trips.css'; // Reusing some glass-panel styles
 import './TripDetails.css';
 
 const TripDetails = () => {
@@ -12,19 +11,16 @@ const TripDetails = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSeat, setSelectedSeat] = useState(null);
 
-  // Focus for review posting
-  const [postRating, setPostRating] = useState(5);
-  const [postComment, setPostComment] = useState('');
+  // Sadece okuma amaçlı (Ekleme MyTrips içerisine taşınıyor)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch trip details
+        // Backend'den detayları çek (Henüz bağlı değilse hata fırlatabilir, fallback düşünebiliriz ama şimdilik try/catch işler)
         const tRes = await fetch(`http://localhost:5000/api/trips/${id}/details`);
         const tData = await tRes.json();
         
-        // Fetch reviews
         const rRes = await fetch(`http://localhost:5000/api/reviews/trip/${id}`);
         const rData = await rRes.json();
 
@@ -42,143 +38,134 @@ const TripDetails = () => {
   const handleSeatClick = (seat) => {
     if (seat.status !== 'available') return;
     
-    // Allow only one seat selection for this mock
     if (selectedSeat === seat.seatNumber) {
-      setSelectedSeat(null); // Deselect
+      setSelectedSeat(null);
     } else {
       setSelectedSeat(seat.seatNumber);
     }
   };
 
-  const handleAddReview = async (e) => {
-    e.preventDefault();
-    try {
-      // Mock logic holding a dummy user since Auth state might not perfectly exist in this test env.
-      const userId = 'GezginUser123'; 
-      
-      const res = await fetch(`http://localhost:5000/api/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tripId: id, userId, rating: postRating, comment: postComment })
-      });
-      const data = await res.json();
-      if(data.success) {
-        setReviews([...reviews, data.data]);
-        setPostComment('');
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  if (loading) return <div className="trips-page-container"><div className="loader">Yükleniyor...</div></div>;
-  if (!trip) return <div className="trips-page-container"><div className="error-alert">Sefer bulunamadı.</div></div>;
+  if (loading) return <div className="trip-loading"><div className="spinner">Yükleniyor...</div></div>;
+  if (!trip) return <div className="trip-loading"><div className="alert-error">Sefer bulunamadı.</div></div>;
 
   return (
-    <div className="trips-page-container" style={{backgroundColor: '#f1f5f9'}}>
-      <div className="trip-details-container">
-        <div className="details-header">
-          <button onClick={() => navigate(-1)} className="tab-btn" style={{marginBottom: '20px'}}>← Geri Dön</button>
-          <h1 className="details-title">{trip.origin} - {trip.destination} ({trip.company})</h1>
-          <p>{new Date(trip.departureTime).toLocaleDateString()} | {trip.type === 'flight' ? 'Uçuş' : 'Otobüs'}</p>
+    <div className="trip-details-page">
+      <div className="details-header-bar">
+        <div className="container details-header-content">
+          <button onClick={() => navigate(-1)} className="back-btn">← Seferlere Dön</button>
+          <div className="trip-main-info">
+            <h1>{trip.origin} <span>→</span> {trip.destination}</h1>
+            <p>
+              {new Date(trip.departureTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })} 
+              {' | '} 
+              {trip.company} 
+              {' | '}
+              {trip.type === 'flight' ? 'Uçak Seferi' : 'Otobüs Seferi'}
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="split-layout">
-          <div className="left-panel">
+      <div className="container details-main-content">
+        <div className="left-panel">
+          
+          <div className="card seat-selection-card">
+            <h2 className="card-title">Koltuk Seçimi</h2>
+            <p className="card-subtitle">Lütfen seyahat etmek istediğiniz koltuğu seçin.</p>
             
-            <div className="info-card glass-panel">
-              <h2>Koltuk Seçimi</h2>
-              <p style={{color:'#64748b', marginTop:'5px'}}>Lütfen seyahat etmek istediğiniz koltuğu seçin.</p>
-              
-              <div className="seat-map-wrapper">
-                <div className="seat-grid-bus">
-                  {trip.seats.map((seat, index) => {
-                    // Create aisle gap logic for a 2+2 layout
-                    const rem = index % 4;
-                    const items = [];
-                    if(rem === 2) items.push(<div key={`aisle-${index}`} className="aisle"></div>);
+            <div className="seat-map-wrapper">
+              <div className="seat-map-legend">
+                <span className="legend-item"><div className="seat-box available"></div> Boş</span>
+                <span className="legend-item"><div className="seat-box occupied"></div> Dolu</span>
+                <span className="legend-item"><div className="seat-box selected"></div> Seçili</span>
+              </div>
 
-                    items.push(
+              <div className="bus-layout">
+                <div className="bus-steering">Direksiyon</div>
+                <div className="seats-grid">
+                  {trip.seats && trip.seats.map((seat, index) => {
+                    const isSelected = selectedSeat === seat.seatNumber;
+                    const isAvailable = seat.status === 'available';
+                    
+                    return (
                       <div 
                         key={seat.seatNumber}
-                        className={`seat-btn 
-                          ${seat.status === 'available' ? 'seat-available' : 'seat-occupied'} 
-                          ${selectedSeat === seat.seatNumber ? 'seat-selected' : ''}`
-                        }
+                        className={`seat ${isAvailable ? 'available' : 'occupied'} ${isSelected ? 'selected' : ''}`}
                         onClick={() => handleSeatClick(seat)}
-                        title={seat.status === 'occupied' ? 'Dolu' : 'Boş'}
+                        title={isAvailable ? `Koltuk ${seat.seatNumber} - Boş` : `Koltuk ${seat.seatNumber} - Dolu`}
                       >
                         {seat.seatNumber}
                       </div>
                     );
-
-                    return items;
                   })}
                 </div>
               </div>
             </div>
-
-            <div className="info-card glass-panel reviews-section">
-              <h3>Yolcu Değerlendirmeleri ({reviews.length})</h3>
-              
-              <div className="review-list">
-                {reviews.length === 0 ? <p>Henüz yorum yapılmamış.</p> : reviews.map(r => (
-                  <div key={r.id} className="review-item">
-                    <div className="review-header">
-                      <strong>Kullanıcı: {r.userId}</strong>
-                      <span className="review-rating">★ {r.rating}/5</span>
-                    </div>
-                    <p style={{color: '#475569'}}>{r.comment}</p>
-                  </div>
-                ))}
-              </div>
-
-              <form className="add-review-form" onSubmit={handleAddReview}>
-                <h4 style={{marginTop:'15px'}}>Yorum Ekle</h4>
-                <div style={{display:'flex', gap:'10px'}}>
-                  <select value={postRating} onChange={e=>setPostRating(Number(e.target.value))} style={{padding:'10px', borderRadius:'8px', border:'1px solid #cbd5e1'}}>
-                    <option value={5}>5 Yıldız</option>
-                    <option value={4}>4 Yıldız</option>
-                    <option value={3}>3 Yıldız</option>
-                    <option value={2}>2 Yıldız</option>
-                    <option value={1}>1 Yıldız</option>
-                  </select>
-                  <input type="text" placeholder="Görüşleriniz..." required value={postComment} onChange={e=>setPostComment(e.target.value)} style={{flex:1, padding:'10px', borderRadius:'8px', border:'1px solid #cbd5e1'}} />
-                  <button type="submit" className="search-submit-btn" style={{height:'100%'}}>Gönder</button>
-                </div>
-              </form>
-            </div>
-
           </div>
 
-          <div className="right-panel">
-            <div className="summary-card glass-panel">
-              <h2 className="summary-title">Özet</h2>
-              
-              <div className="summary-row">
+          <div className="card reviews-card">
+            <h2 className="card-title">Yolcu Değerlendirmeleri ({reviews.length})</h2>
+            
+            <div className="reviews-list">
+              {reviews.length === 0 ? (
+                <p className="no-reviews">Bu sefer için henüz değerlendirme yapılmamış. İlk değerlendiren siz olun!</p>
+              ) : (
+                reviews.map((r, i) => (
+                  <div key={i} className="review-item">
+                    <div className="review-top">
+                      <span className="reviewer-name">{r.userId}</span>
+                      <span className="review-stars">{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</span>
+                    </div>
+                    <p className="review-comment">{r.comment}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        <div className="right-panel">
+          <div className="card summary-card sticky">
+            <h2 className="card-title">Sefer Özeti</h2>
+            
+            <div className="summary-details">
+              <div className="route-info">
+                <div className="route-time">{new Date(trip.departureTime).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</div>
+                <div className="route-city">{trip.origin}</div>
+              </div>
+              <div className="route-line"></div>
+              <div className="route-info text-right">
+                <div className="route-time">{new Date(trip.arrivalTime).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</div>
+                <div className="route-city">{trip.destination}</div>
+              </div>
+            </div>
+
+            <hr className="divider" />
+
+            <div className="price-breakdown">
+              <div className="price-row">
                 <span>Bilet Tutarı</span>
                 <span>{trip.price} ₺</span>
               </div>
-              <div className="summary-row">
+              <div className="price-row">
                 <span>Hizmet Bedeli</span>
                 <span>{trip.price * 0.05} ₺</span>
               </div>
-              <div className="summary-row">
+              <div className="price-row highlight">
                 <span>Seçili Koltuk</span>
-                <span style={{fontWeight:'bold', color:'#6366f1'}}>
-                  {selectedSeat ? selectedSeat : '-'}
-                </span>
+                <span>{selectedSeat ? `Koltuk ${selectedSeat}` : '-'}</span>
               </div>
               
-              <div className="summary-row summary-total">
-                <span>Toplam</span>
-                <span>{trip.price + (trip.price * 0.05)} ₺</span>
+              <div className="price-total">
+                <span>Toplam Tutar</span>
+                <span className="total-amount">{trip.price + (trip.price * 0.05)} ₺</span>
               </div>
-
-              <button className="checkout-btn" disabled={!selectedSeat}>
-                {selectedSeat ? 'Ödemeye Geç' : 'Koltuk Seçin'}
-              </button>
             </div>
+
+            <button className="book-action-btn" disabled={!selectedSeat}>
+              {selectedSeat ? 'Ödemeye İlerle' : 'Lütfen Koltuk Seçin'}
+            </button>
           </div>
         </div>
       </div>

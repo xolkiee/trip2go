@@ -1,9 +1,4 @@
-// In-memory reviews list
-let reviews = [
-  { id: 'r1', tripId: 't1', userId: 'user1', rating: 5, comment: 'Süper bir yolculuktu!', createdAt: new Date().toISOString() },
-  { id: 'r2', tripId: 't1', userId: 'user2', rating: 4, comment: 'Otobüs rahattı, ikramlar taze.', createdAt: new Date().toISOString() },
-  { id: 'r3', tripId: 't4', userId: 'user3', rating: 5, comment: 'Uçak zamanında kalktı, harika!', createdAt: new Date().toISOString() }
-];
+const Review = require('../models/Review');
 
 // @desc    Yeni bir değerlendirme (review) ekler
 // @route   POST /api/reviews
@@ -16,21 +11,19 @@ const addReview = async (req, res) => {
       return res.status(400).json({ message: 'Lütfen tüm alanları (tripId, userId, rating, comment) doldurun.' });
     }
 
-    const newReview = {
-      id: Date.now().toString(),
-      tripId,
-      userId,
-      rating,
-      comment,
-      createdAt: new Date().toISOString()
-    };
-
-    reviews.push(newReview);
+    const newReview = await Review.create({ tripId, userId, rating, comment });
 
     res.status(201).json({
       success: true,
       message: 'Değerlendirme başarıyla eklendi.',
-      data: newReview
+      data: {
+        id: newReview._id,
+        tripId: newReview.tripId,
+        userId: newReview.userId,
+        rating: newReview.rating,
+        comment: newReview.comment,
+        createdAt: newReview.createdAt
+      }
     });
   } catch (error) {
     console.error('Add Review Hatası:', error);
@@ -44,12 +37,21 @@ const addReview = async (req, res) => {
 const getTripReviews = async (req, res) => {
   try {
     const tripId = req.params.id;
-    const tripReviews = reviews.filter(r => r.tripId === tripId);
+    const tripReviews = await Review.find({ tripId }).sort({ createdAt: -1 });
+
+    const mapped = tripReviews.map(r => ({
+      id: r._id,
+      tripId: r.tripId,
+      userId: r.userId,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt
+    }));
 
     res.status(200).json({
       success: true,
-      count: tripReviews.length,
-      data: tripReviews
+      count: mapped.length,
+      data: mapped
     });
   } catch (error) {
     console.error('Get Trip Reviews Hatası:', error);
@@ -65,19 +67,28 @@ const updateReview = async (req, res) => {
     const reviewId = req.params.id;
     const { rating, comment } = req.body;
 
-    const reviewIndex = reviews.findIndex(r => r.id === reviewId);
+    const review = await Review.findById(reviewId);
 
-    if (reviewIndex === -1) {
+    if (!review) {
       return res.status(404).json({ message: 'Yorum bulunamadı.' });
     }
 
-    if (rating) reviews[reviewIndex].rating = rating;
-    if (comment) reviews[reviewIndex].comment = comment;
+    if (rating) review.rating = rating;
+    if (comment) review.comment = comment;
+
+    await review.save();
 
     res.status(200).json({
       success: true,
       message: 'Yorum güncellendi.',
-      data: reviews[reviewIndex]
+      data: {
+        id: review._id,
+        tripId: review.tripId,
+        userId: review.userId,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt
+      }
     });
   } catch (error) {
     console.error('Update Review Hatası:', error);
@@ -91,14 +102,11 @@ const updateReview = async (req, res) => {
 const deleteReview = async (req, res) => {
   try {
     const reviewId = req.params.id;
+    const review = await Review.findByIdAndDelete(reviewId);
 
-    const reviewIndex = reviews.findIndex(r => r.id === reviewId);
-
-    if (reviewIndex === -1) {
+    if (!review) {
       return res.status(404).json({ message: 'Silinecek yorum bulunamadı.' });
     }
-
-    reviews.splice(reviewIndex, 1);
 
     res.status(200).json({
       success: true,

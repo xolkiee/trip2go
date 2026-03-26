@@ -1,20 +1,8 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
-// Veritabanı (MongoDB) kullanılmadığı için kullanıcıları geçici olarak hafızada tutuyoruz.
-// Sunucu yeniden başlatıldığında bu liste sıfırlanacaktır.
-let users = [
-  {
-    id: 'admin_1',
-    firstName: 'Sistem',
-    lastName: 'Yöneticisi',
-    email: 'admin@trip2go.com',
-    password: 'admin',
-    role: 'admin',
-    createdAt: new Date().toISOString()
-  }
-];
-
-// JWT için kullanılacak gizli anahtar (Gerçek uygulamada .env dosyasından alınmalıdır)
+// JWT için kullanılacak gizli anahtar
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-trip2go-key-2026';
 
 // @desc    Yeni kullanıcı kaydı oluşturur (Register)
@@ -24,42 +12,34 @@ const registerUser = async (req, res) => {
   try {
     const { firstName, lastName, email, password, phone } = req.body;
 
-    // Gerekli alanların kontrolü
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: 'Lütfen zorunlu tüm alanları doldurun.' });
     }
 
-    // Kullanıcı var mı kontrolü
-    const userExists = users.find(u => u.email === email);
+    const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.' });
     }
 
-    // Yeni kullanıcı objesi
-    const newUser = {
-      id: Date.now().toString(),
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
       firstName,
       lastName,
       email,
-      password, // Şifreyi güvenlik gereği bcrypt ile şifrelememiz gerekir, ancak demo amaçlı düz metin olarak alıyoruz.
+      password: hashedPassword,
       phone: phone || '',
-      role: 'user', // varsayılan rol
-      createdAt: new Date().toISOString()
-    };
+      role: 'user'
+    });
 
-    // Bellekteki listeye ekle
-    users.push(newUser);
-    
-    // Test amaçlı konsola yazdır
-    console.log('Yeni kullanıcı kayıt oldu:', email, '| Toplam kullanıcı:', users.length);
+    console.log('Yeni kullanıcı kayıt oldu:', email);
 
-    // İstenirse kayıt olduktan sonra direkt giriş yapabilmesi için token verilebilir.
-    // Şimdilik sadece başarılı mesajı dönüyoruz.
     res.status(201).json({
       success: true,
       message: 'Kayıt işlemi başarıyla tamamlandı.',
       user: {
-        id: newUser.id,
+        id: newUser._id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
@@ -84,16 +64,35 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Lütfen e-posta ve şifrenizi girin.' });
     }
 
-    // Kullanıcıyı e-posta ve şifre ile bul
-    const user = users.find(u => u.email === email && u.password === password);
+    // Furkan'ın admin paneli testleri için MongoDB'de olmasa da geçici destek eklenebilir
+    if (email === 'admin@trip2go.com' && password === 'admin') {
+      const token = jwt.sign(
+        { id: 'admin_1', email: 'admin@trip2go.com', role: 'admin' },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Admin girişi başarılı.',
+        token,
+        user: { id: 'admin_1', firstName: 'Sistem', lastName: 'Yöneticisi', email: 'admin@trip2go.com', role: 'admin' }
+      });
+    }
+
+    // MongoDB kullanıcı araması
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({ message: 'Geçersiz e-posta veya şifre.' });
     }
 
-    // JWT Token oluştur
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Geçersiz e-posta veya şifre.' });
+    }
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -105,7 +104,7 @@ const loginUser = async (req, res) => {
       message: 'Giriş başarılı.',
       token,
       user: {
-        id: user.id,
+        id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -130,22 +129,21 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'Lütfen e-posta adresinizi girin.' });
     }
 
-    const user = users.find(u => u.email === email);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.' });
     }
 
-    // Sahte bir token üret
     const resetToken = Math.random().toString(36).substring(2, 15);
     user.resetToken = resetToken;
+    await user.save();
     
     console.log(`Şifre sıfırlama talebi alındı: ${email}. Token: ${resetToken}`);
 
     res.status(200).json({
       success: true,
       message: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.',
-      // Gerçekte token dönderilmez, buraya demo amaçlı ve frontend'de kullanmak için koyuyoruz.
-      resetToken
+      resetToken // Demo amaçlı frontende de gönderiyoruz
     });
 
   } catch (error) {
@@ -165,15 +163,18 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Lütfen yeni şifrenizi ve token bilginizi girin.' });
     }
 
-    const user = users.find(u => u.resetToken === token);
+    const user = await User.findOne({ resetToken: token });
 
     if (!user) {
       return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş bir token girdiniz.' });
     }
 
-    // Şifreyi güncelle ve token'i sil
-    user.password = newPassword;
-    delete user.resetToken;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    await user.save();
 
     console.log(`Kullanıcı şifresi yenilendi: ${user.email}`);
 
@@ -188,9 +189,52 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// @desc    Admin kullanıcısı oluşturur
+// @route   POST /api/auth/admin-register
+// @access  Public
+const registerAdminUser = async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, secretKey } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !secretKey) {
+      return res.status(400).json({ message: 'Lütfen zorunlu tüm alanları doldurun.' });
+    }
+
+    if (secretKey !== 'trip2go-admin') {
+      return res.status(403).json({ message: 'Geçersiz Admin Kayıt Anahtarı!' });
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'Bu e-posta adresi ile kayıtlı bir kullanıcı zaten mevcut.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role: 'admin'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Yönetici hesabı başarıyla oluşturuldu. Şimdi giriş yapabilirsiniz.'
+    });
+
+  } catch (error) {
+    console.error('Admin Register Hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  registerAdminUser
 };

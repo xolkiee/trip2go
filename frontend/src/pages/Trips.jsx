@@ -1,6 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Trips.css';
+
+const SearchableSelect = ({ value, onChange, options, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(value || '');
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    setSearchTerm(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm(value || ''); // Blur olduğunda eski seçimi geri yükle
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [value]);
+
+  // Türkçe karakter hatalarını (I-ı, İ-i) düzelten yardımcı toLowerCase
+  const trToLowerCase = (str) => {
+    return str.replace(/I/g, 'ı').replace(/İ/g, 'i').toLowerCase();
+  };
+
+  const filteredOptions = options.filter(opt => 
+    trToLowerCase(opt.name).includes(trToLowerCase(searchTerm))
+  );
+
+  return (
+    <div className="searchable-select" ref={wrapperRef}>
+      <input 
+        type="text"
+        className="select-display-input"
+        value={searchTerm}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={(e) => {
+          e.target.select();
+          setIsOpen(true);
+        }}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+      
+      {isOpen && (
+        <div className="select-dropdown">
+          <ul className="select-options-list">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map(opt => (
+                <li 
+                  key={opt.id} 
+                  onMouseDown={(e) => e.preventDefault()} // engellemezsek input focus kaybeder
+                  onClick={() => {
+                    onChange(opt.name);
+                    setSearchTerm(opt.name);
+                    setIsOpen(false);
+                  }}
+                  className={value === opt.name ? 'selected' : ''}
+                >
+                  {opt.name}
+                </li>
+              ))
+            ) : (
+              <li className="no-options">Kayıt bulunamadı.</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Trips = () => {
   const [trips, setTrips] = useState([]);
@@ -12,12 +87,15 @@ const Trips = () => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [tripDate, setTripDate] = useState('');
-  const [type, setType] = useState('bus'); // 'bus' or 'flight'
+  const [type, setType] = useState('bus'); // 'bus' veya 'flight'
 
   const navigate = useNavigate();
 
+  // JavaScript ile bugünün tarihini YYYY-MM-DD formatında al
+  const today = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
-    // Fetch locations for autocomplete/select options
+    // API'den binlerce İl/İlçe/Havalimanı verisini çek
     const fetchLocations = async () => {
       try {
         const res = await fetch('http://localhost:5000/api/locations');
@@ -30,9 +108,14 @@ const Trips = () => {
       }
     };
     fetchLocations();
-    handleSearch(); // Initial load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tip değiştikçe origin ve destination'ı sıfırla ki Otobüs'teyken seçili Uçak havalimanı kalmasın
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    setOrigin('');
+    setDestination('');
+  };
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
@@ -59,115 +142,129 @@ const Trips = () => {
     }
   };
 
+  // Dinamik placeholder ve konum filtreleme mantığı
+  const filteredLocations = locations.filter(loc => loc.type === (type === 'bus' ? 'city' : 'airport'));
+  const placeholderText = type === 'bus' ? 'İl veya İlçe Seçin' : 'Havalimanı Seçin';
+
   return (
     <div className="trips-page-container">
-      {/* Premium Hero Search Banner */}
+      {/* Modern Yatay Arama Çubuğu (Hero Section) */}
       <div className="search-hero">
-        <div className="hero-content">
+        <div className="search-hero-content">
           <h1 className="hero-title">Yolculuğa Nereye Başlayalım?</h1>
-          <p className="hero-subtitle">Hayalindeki tatili bulmak için hemen arama yap.</p>
           
-          <form className="search-box glass-panel" onSubmit={handleSearch}>
-            <div className="search-tabs">
-              <button 
-                type="button" 
-                className={`tab-btn ${type === 'bus' ? 'active' : ''}`}
-                onClick={() => setType('bus')}
-              >
-                🚌 Otobüs Bileti
-              </button>
-              <button 
-                type="button" 
-                className={`tab-btn ${type === 'flight' ? 'active' : ''}`}
-                onClick={() => setType('flight')}
-              >
-                ✈️ Uçak Bileti
-              </button>
-            </div>
+          <div className="search-tabs">
+            <button 
+              type="button" 
+              className={`search-tab ${type === 'bus' ? 'active' : ''}`}
+              onClick={() => handleTypeChange('bus')}
+            >
+              Otobüs Bileti
+            </button>
+            <button 
+              type="button" 
+              className={`search-tab ${type === 'flight' ? 'active' : ''}`}
+              onClick={() => handleTypeChange('flight')}
+            >
+              Uçak Bileti
+            </button>
+          </div>
 
-            <div className="search-fields">
-              <div className="field-group">
-                <label>Nereden</label>
-                <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
-                  <option value="">Şehir Seçin</option>
-                  {locations.map(loc => (
-                    <option key={loc.id} value={loc.name}>{loc.name}</option>
-                  ))}
-                </select>
+          <form className="search-box" onSubmit={handleSearch}>
+            <div className="search-fields-row">
+              <div className="search-input-group border-right" style={{ position: 'relative' }}>
+                <label>Kalkış Noktası</label>
+                <SearchableSelect 
+                  value={origin} 
+                  onChange={(val) => setOrigin(val)} 
+                  options={filteredLocations} 
+                  placeholder={locations.length === 0 ? 'Yükleniyor...' : placeholderText} 
+                />
+
+                <div className="switch-icon-wrapper">
+                  <button type="button" className="switch-icon" onClick={() => {
+                     const temp = origin; setOrigin(destination); setDestination(temp);
+                  }}>
+                    ⇆
+                  </button>
+                </div>
               </div>
 
-              <div className="field-group">
-                <label>Nereye</label>
-                <select value={destination} onChange={(e) => setDestination(e.target.value)}>
-                  <option value="">Şehir Seçin</option>
-                  {locations.map(loc => (
-                    <option key={loc.id} value={loc.name}>{loc.name}</option>
-                  ))}
-                </select>
+              <div className="search-input-group border-right padding-left">
+                <label>Varış Noktası</label>
+                <SearchableSelect 
+                  value={destination} 
+                  onChange={(val) => setDestination(val)} 
+                  options={filteredLocations} 
+                  placeholder={locations.length === 0 ? 'Yükleniyor...' : placeholderText} 
+                />
               </div>
 
-              <div className="field-group">
+              <div className="search-input-group padding-left">
                 <label>Gidiş Tarihi</label>
                 <input 
                   type="date" 
                   value={tripDate} 
-                  onChange={(e) => setTripDate(e.target.value)} 
+                  onChange={(e) => setTripDate(e.target.value)}
+                  min={today} 
                 />
               </div>
 
               <button type="submit" className="search-submit-btn">
-                Sefer Bul
+                Bilet Bul
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* Results Section */}
+      {/* Sonuç Listesi */}
       <div className="results-container">
         {loading ? (
-          <div className="loader">Yükleniyor...</div>
+          <div className="loading-spinner">Yükleniyor...</div>
         ) : error ? (
-          <div className="error-alert">{error}</div>
+          <div className="alert alert-error" style={{maxWidth: '1000px', margin: '0 auto'}}>{error}</div>
         ) : trips.length > 0 ? (
           <div className="trips-list">
-            <h2 className="results-title">Arama Sonuçları ({trips.length} Sefer Bulundu)</h2>
+            <h2 className="results-title">{trips.length} Sefer Bulundu</h2>
+            
             {trips.map(trip => (
-              <div key={trip.id} className="trip-card glass-panel" onClick={() => navigate(`/trips/${trip.id}`)}>
+              <div key={trip.id} className="trip-card" onClick={() => navigate(`/trips/${trip.id}`)}>
                 <div className="trip-card-left">
-                  <div className="trip-company">{trip.company}</div>
+                  <div className="trip-company-name">{trip.company}</div>
                   <div className="trip-features">
                     {trip.features?.map((f, i) => <span key={i} className="feature-badge">{f}</span>)}
                   </div>
                 </div>
                 
                 <div className="trip-card-middle">
-                  <div className="timeline">
-                    <div className="time-block">
-                      <div className="time">{new Date(trip.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                      <div className="station">{trip.origin}</div>
+                  <div className="timeline-section">
+                    <div className="timeline-point">
+                      <span className="time">{new Date(trip.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span className="station">{trip.origin}</span>
                     </div>
-                    <div className="timeline-line">
+                    <div className="timeline-bar">
                       <span className="duration-icon">{trip.type === 'flight' ? '✈️' : '🚌'}</span>
+                      <div className="line"></div>
                     </div>
-                    <div className="time-block">
-                      <div className="time">{new Date(trip.arrivalTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                      <div className="station">{trip.destination}</div>
+                    <div className="timeline-point">
+                      <span className="time">{new Date(trip.arrivalTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span className="station">{trip.destination}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="trip-card-right">
-                  <div className="price">{trip.price} ₺</div>
-                  <div className="seats-info">{trip.availableSeats} Boş Koltuk</div>
-                  <button className="book-btn">Seç ve İlerle</button>
+                  <div className="price">{trip.price} <small>TL</small></div>
+                  <div className="seats-info">{trip.availableSeats} Koltuk Boş</div>
+                  <button className="book-btn">Seç</button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="no-results glass-panel">
-            <h3>Üzgünüz, kriterlerinize uygun sefer bulunamadı.</h3>
+          <div className="no-results-card">
+            <h3>Üzgünüz, {tripDate ? `${tripDate} tarihindeki` : ''} kriterlerinize uygun sefer bulunamadı.</h3>
             <p>Farklı bir tarih veya güzergah deneyebilirsiniz!</p>
           </div>
         )}
