@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const seatSchema = new mongoose.Schema({
   seatNumber: { type: Number, required: true },
-  status: { type: String, enum: ['available', 'reserved', 'occupied'], default: 'available' }
+  status: { type: String, enum: ['available', 'reserved', 'occupied'], default: 'available' },
+  gender: { type: String, enum: ['erkek', 'kadin', null], default: null }
 });
 
 const tripSchema = new mongoose.Schema({

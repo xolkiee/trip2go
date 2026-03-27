@@ -63,6 +63,7 @@ const Profile = () => {
     }
 
     let val = rawVal.replace(/\D/g, '');
+    if (val.length > 0 && val[0] !== '0') val = '0' + val;
     if (val.length > 11) val = val.slice(0, 11);
     
     let formatted = val;
@@ -80,6 +81,12 @@ const Profile = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (phone && phone.length < 14) {
+       setErrorMsg('Lütfen telefon numarasını eksiksiz giriniz (örn: 05xx xxx xx xx).');
+       return;
+    }
+
     setUpdateLoading(true);
 
     try {

@@ -162,8 +162,13 @@ const getTripDetails = async (req, res) => {
     });
 
     tripObj.seats.forEach(seat => {
-        if (seat.status === 'available' && reservedSeatNumbers.includes(seat.seatNumber)) {
-            seat.status = 'reserved';
+        if (seat.status === 'available') {
+             const reservedRule = activeReservations.find(r => r.seats.some(s => s.seatNumber === seat.seatNumber));
+             if (reservedRule) {
+                 seat.status = 'reserved';
+                 const sInfo = reservedRule.seats.find(s => s.seatNumber === seat.seatNumber);
+                 seat.gender = sInfo.gender;
+             }
         }
     });
 

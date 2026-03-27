@@ -13,6 +13,7 @@ const TripDetails = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [myReservation, setMyReservation] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showGenderModal, setShowGenderModal] = useState({ visible: false, seatNumber: null });
 
   // Sadece okuma amaçlı (Ekleme MyTrips içerisine taşınıyor)
 
@@ -69,15 +70,20 @@ const TripDetails = () => {
     if (seat.status !== 'available') return;
     setErrorMsg('');
     
-    if (selectedSeats.includes(seat.seatNumber)) {
-        setSelectedSeats(selectedSeats.filter(s => s !== seat.seatNumber));
+    if (selectedSeats.some(s => s.seatNumber === seat.seatNumber)) {
+        setSelectedSeats(selectedSeats.filter(s => s.seatNumber !== seat.seatNumber));
     } else {
         if (selectedSeats.length >= 5) {
             setErrorMsg('En fazla 5 koltuk seçebilirsiniz.');
             return;
         }
-        setSelectedSeats([...selectedSeats, seat.seatNumber]);
+        setShowGenderModal({ visible: true, seatNumber: seat.seatNumber });
     }
+  };
+
+  const handleGenderSelect = (gender) => {
+    setSelectedSeats([...selectedSeats, { seatNumber: showGenderModal.seatNumber, gender }]);
+    setShowGenderModal({ visible: false, seatNumber: null });
   };
 
   const handleReserve = async () => {
@@ -143,25 +149,49 @@ const TripDetails = () => {
             <h2 className="card-title">Koltuk Seçimi</h2>
             <p className="card-subtitle">Lütfen seyahat etmek istediğiniz koltuğu seçin.</p>
             
+            {showGenderModal.visible && (
+               <div className="gender-modal-overlay">
+                  <div className="gender-modal">
+                     <h3>Yolcu Cinsiyeti</h3>
+                     <p>Lütfen {showGenderModal.seatNumber} numaralı koltuk için yolcu cinsiyetini seçiniz.</p>
+                     <div className="gender-buttons">
+                        <button className="btn-gender erkek" onClick={() => handleGenderSelect('erkek')}>Erkek</button>
+                        <button className="btn-gender kadin" onClick={() => handleGenderSelect('kadin')}>Kadın</button>
+                     </div>
+                     <button className="btn-cancel" onClick={() => setShowGenderModal({ visible: false, seatNumber: null })}>İptal Et</button>
+                  </div>
+               </div>
+            )}
+
             <div className="seat-map-wrapper">
               <div className="seat-map-legend">
                 <span className="legend-item"><div className="seat-box available"></div> Boş</span>
-                <span className="legend-item"><div className="seat-box occupied"></div> Dolu</span>
-                <span className="legend-item"><div className="seat-box selected"></div> Seçili</span>
+                <span className="legend-item"><div className="seat-box gender-male" style={{backgroundColor: '#bae6fd'}}></div> Erkek</span>
+                <span className="legend-item"><div className="seat-box gender-female" style={{backgroundColor: '#fbcfe8'}}></div> Kadın</span>
               </div>
 
               <div className="bus-layout">
                 <div className="bus-steering">Direksiyon</div>
                 <div className={`seats-grid layout-${trip.seatLayout ? trip.seatLayout.replace('+', '-') : '2-2'}`}>
                   {trip.seats && trip.seats.map((seat) => {
-                    const isMyReservation = myReservation?.seats?.includes(seat.seatNumber);
-                    const isSelected = selectedSeats.includes(seat.seatNumber);
+                    const myResSeat = myReservation?.seats?.find(s => s.seatNumber === seat.seatNumber);
+                    const isMyReservation = !!myResSeat;
+                    const selSeat = selectedSeats.find(s => s.seatNumber === seat.seatNumber);
+                    const isSelected = !!selSeat;
                     const isAvailable = seat.status === 'available' || isMyReservation;
+                    
+                    let seatGenderClass = '';
+                    if (seat.gender === 'erkek') seatGenderClass = 'gender-male';
+                    else if (seat.gender === 'kadin') seatGenderClass = 'gender-female';
+                    else if (isSelected) seatGenderClass = selSeat.gender === 'erkek' ? 'gender-male' : 'gender-female';
+                    else if (isMyReservation) seatGenderClass = myResSeat.gender === 'erkek' ? 'gender-male' : 'gender-female';
+
+                    let baseStatus = isAvailable ? (isMyReservation || isSelected ? 'selected' : 'available') : (seat.status === 'reserved' ? 'reserved' : 'occupied');
                     
                     return (
                       <div 
                         key={seat.seatNumber}
-                        className={`seat ${isAvailable ? (isMyReservation ? 'selected' : (isSelected ? 'selected' : 'available')) : (seat.status === 'reserved' ? 'reserved' : 'occupied')}`}
+                        className={`seat ${baseStatus} ${seatGenderClass}`}
                         onClick={() => handleSeatClick(seat)}
                         title={isAvailable ? (isMyReservation ? `Koltuk ${seat.seatNumber} - Sizin Rezerve Ettiğiniz Koltuk` : `Koltuk ${seat.seatNumber} - Boş`) : (seat.status === 'reserved' ? `Koltuk ${seat.seatNumber} - Rezerve Edilmiş` : `Koltuk ${seat.seatNumber} - Dolu`)}
                       >
@@ -205,7 +235,7 @@ const TripDetails = () => {
               </div>
               <div className="price-row highlight">
                 <span>Seçili Koltuklar</span>
-                <span>{selectedSeats.length > 0 ? selectedSeats.sort((a,b)=>a-b).join(', ') : '-'}</span>
+                <span>{selectedSeats.length > 0 ? selectedSeats.map(s=>s.seatNumber).sort((a,b)=>a-b).join(', ') : '-'}</span>
               </div>
               
               <div className="price-total">
@@ -216,7 +246,7 @@ const TripDetails = () => {
 
             {myReservation && (
                 <div className="alert" style={{marginBottom: '15px', padding: '10px', borderRadius: '5px', backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0'}}>
-                    <strong>Koltuk {myReservation.seats.join(',')} sizin adınıza rezerve!</strong> Kalan süreniz bitmeden ödemeyi tamamlayabilirsiniz.
+                    <strong>Koltuk {myReservation.seats.map(s=>s.seatNumber).join(',')} sizin adınıza rezerve!</strong> Kalan süreniz bitmeden ödemeyi tamamlayabilirsiniz.
                 </div>
             )}
             {errorMsg && <div className="alert-error" style={{marginBottom: '10px'}}>{errorMsg}</div>}

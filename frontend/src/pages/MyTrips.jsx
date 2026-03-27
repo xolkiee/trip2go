@@ -12,7 +12,30 @@ const MyTrips = () => {
 
   // Yolcu Güncelleme State
   const [editTicketId, setEditTicketId] = useState(null);
-  const [editPassenger, setEditPassenger] = useState({ firstName: '', lastName: '' });
+  const [editPassenger, setEditPassenger] = useState({ firstName: '', lastName: '', identityNumber: '', contactPhone: '' });
+
+  const handleEditIdentityChange = (rawVal) => {
+    setEditPassenger(prev => ({ ...prev, identityNumber: rawVal.replace(/\D/g, '') }));
+  };
+
+  const handleEditPhoneChange = (rawVal) => {
+    let currentVal = editPassenger.contactPhone;
+    if (currentVal.length > rawVal.length && currentVal.endsWith(' ') && !rawVal.endsWith(' ')) {
+       rawVal = rawVal.slice(0, -1);
+    }
+    let val = rawVal.replace(/\D/g, '');
+    if (val.length > 0 && val[0] !== '0') val = '0' + val;
+    if (val.length > 11) val = val.slice(0, 11);
+    let formatted = val;
+    if (val.length > 3 && val.length <= 6) {
+      formatted = `${val.slice(0,4)} ${val.slice(4)}`;
+    } else if (val.length > 6 && val.length <= 8) {
+      formatted = `${val.slice(0,4)} ${val.slice(4,7)} ${val.slice(7)}`;
+    } else if (val.length > 8) {
+      formatted = `${val.slice(0,4)} ${val.slice(4,7)} ${val.slice(7,9)} ${val.slice(9)}`;
+    }
+    setEditPassenger(prev => ({ ...prev, contactPhone: formatted }));
+  };
 
   const fetchTickets = async () => {
     try {
@@ -120,6 +143,14 @@ const MyTrips = () => {
 
   const submitPassengerEdit = async (e, ticketId) => {
     e.preventDefault();
+    if (editPassenger.identityNumber.length !== 11) {
+        alert("Lütfen 11 haneli T.C. Kimlik numarasını eksiksiz giriniz.");
+        return;
+    }
+    if (editPassenger.contactPhone.length < 14) {
+        alert("Lütfen geçerli bir telefon numarası giriniz (örn: 05xx xxx xx xx).");
+        return;
+    }
     try {
        const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}/passenger`, {
           method: 'PUT',
@@ -185,7 +216,12 @@ const MyTrips = () => {
                     <div className="ticket-mgmt-actions" style={{ display: 'flex', gap: '10px', marginBottom: '15px'}}>
                        <button className="rate-btn" style={{backgroundColor: '#3b82f6'}} onClick={() => {
                           setEditTicketId(ticket._id);
-                           setEditPassenger({ firstName: ticket.passenger?.firstName || '', lastName: ticket.passenger?.lastName || '' });
+                          setEditPassenger({ 
+                             firstName: ticket.passenger?.firstName || '', 
+                             lastName: ticket.passenger?.lastName || '',
+                             identityNumber: ticket.passenger?.identityNumber || '',
+                             contactPhone: ticket.passenger?.contactPhone || ''
+                          });
                        }}>Yolcu Güncelle</button>
                        <button className="rate-btn" style={{backgroundColor: '#ef4444'}} onClick={() => handleCancelTicket(ticket._id)}>Bileti İptal Et</button>
                     </div>
@@ -195,9 +231,23 @@ const MyTrips = () => {
                   {editTicketId === ticket._id && (
                      <form onSubmit={(e) => submitPassengerEdit(e, ticket._id)} style={{background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
                         <h4 style={{marginBottom: '10px', color: '#1e293b'}}>Yolcu Bilgilerini Güncelle</h4>
-                        <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
-                           <input type="text" value={editPassenger.firstName} onChange={e => setEditPassenger({...editPassenger, firstName: e.target.value})} style={{padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px'}} required />
-                           <input type="text" value={editPassenger.lastName} onChange={e => setEditPassenger({...editPassenger, lastName: e.target.value})} style={{padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px'}} required />
+                        <div style={{display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap'}}>
+                           <div style={{flex: 1, minWidth: '45%'}}>
+                             <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b'}}>Ad</label>
+                             <input type="text" value={editPassenger.firstName} onChange={e => setEditPassenger({...editPassenger, firstName: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box'}} required />
+                           </div>
+                           <div style={{flex: 1, minWidth: '45%'}}>
+                             <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b'}}>Soyad</label>
+                             <input type="text" value={editPassenger.lastName} onChange={e => setEditPassenger({...editPassenger, lastName: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box'}} required />
+                           </div>
+                           <div style={{flex: 1, minWidth: '45%'}}>
+                             <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b'}}>T.C. Kimlik / Pasaport</label>
+                             <input type="text" maxLength="11" placeholder="11 Haneli TCKN" value={editPassenger.identityNumber} onChange={e => handleEditIdentityChange(e.target.value)} style={{width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box'}} required />
+                           </div>
+                           <div style={{flex: 1, minWidth: '45%'}}>
+                             <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b'}}>İletişim Numarası</label>
+                             <input type="text" maxLength="15" placeholder="0555 555 55 55" value={editPassenger.contactPhone} onChange={e => handleEditPhoneChange(e.target.value)} style={{width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box'}} required />
+                           </div>
                         </div>
                         <div style={{display: 'flex', gap: '10px'}}>
                            <button type="submit" className="save-btn" style={{padding: '8px 16px', fontSize: '0.9rem'}}>Kaydet</button>

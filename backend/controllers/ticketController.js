@@ -38,6 +38,7 @@ const createTicket = async (req, res) => {
 
         const seatIndex = trip.seats.findIndex(s => s.seatNumber === Number(p.seatNumber));
         trip.seats[seatIndex].status = 'occupied';
+        trip.seats[seatIndex].gender = p.gender; // Kalıcı cinsiyet ataması
     }
 
     await trip.save();
@@ -89,6 +90,7 @@ const cancelTicket = async (req, res) => {
        const seatIndex = trip.seats.findIndex(s => s.seatNumber === ticket.seatNumber);
        if (seatIndex !== -1) {
           trip.seats[seatIndex].status = 'available';
+          trip.seats[seatIndex].gender = null; // Cinsiyet de boşa çıkartılır
           await trip.save();
        }
     }

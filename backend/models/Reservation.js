@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const reservationSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   trip: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', required: true },
-  seats: [{ type: Number, required: true }],
+  seats: [{ 
+    seatNumber: { type: Number, required: true },
+    gender: { type: String, enum: ['erkek', 'kadin'], required: true }
+  }],
   expiresAt: { type: Date, required: true },
   status: { type: String, enum: ['active', 'expired', 'completed'], default: 'active' }
 }, { timestamps: true });

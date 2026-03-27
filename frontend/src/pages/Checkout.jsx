@@ -31,8 +31,9 @@ const Checkout = () => {
         if (data.success) {
           setReservation(data.data);
           
-          let initialPassengers = data.data.seats.map(seat => ({
-            seatNumber: seat,
+          let initialPassengers = data.data.seats.map(seatInfo => ({
+            seatNumber: seatInfo.seatNumber,
+            gender: seatInfo.gender,
             passengerInfo: { firstName: '', lastName: '', identityNumber: '', contactPhone: '' }
           }));
 
@@ -89,6 +90,7 @@ const Checkout = () => {
        rawVal = rawVal.slice(0, -1);
     }
     let val = rawVal.replace(/\D/g, '');
+    if (val.length > 0 && val[0] !== '0') val = '0' + val;
     if (val.length > 11) val = val.slice(0, 11);
     let formatted = val;
     if (val.length > 3 && val.length <= 6) {
@@ -161,6 +163,24 @@ const Checkout = () => {
     if (timeLeft <= 0) {
       setErrorMsg("Süre dolduğu için ödeme alınamıyor.");
       return;
+    }
+    
+    // Form Verisi Doğrulaması (Validation)
+    for (let i = 0; i < passengers.length; i++) {
+        const p = passengers[i].passengerInfo;
+        if (p.identityNumber.length !== 11) {
+            setErrorMsg(`${i + 1}. Yolcu için 11 haneli T.C. Kimlik numarasını eksiksiz giriniz.`);
+            return;
+        }
+        if (p.contactPhone.length < 14) {
+            setErrorMsg(`${i + 1}. Yolcu için geçerli bir telefon numarası giriniz (örn: 05xx xxx xx xx).`);
+            return;
+        }
+    }
+
+    if (cardNumber.replace(/\s/g, '').length !== 16) {
+        setErrorMsg('Lütfen 16 haneli kredi kartı numaranızı eksiksiz giriniz.');
+        return;
     }
     
     setProcessing(true);
@@ -237,7 +257,7 @@ const Checkout = () => {
               {passengers.map((p, idx) => (
                 <div key={p.seatNumber} style={{ marginBottom: '25px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
                   <h3 style={{ marginBottom: '15px', color: '#1e293b', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>
-                    Yolcu {idx + 1} (Koltuk {p.seatNumber})
+                    Yolcu {idx + 1} ({p.gender === 'erkek' ? '👨 Erkek' : '👩 Kadın'} - Koltuk {p.seatNumber})
                   </h3>
                   <div className="form-row">
                     <div className="form-group">
@@ -294,7 +314,7 @@ const Checkout = () => {
                 <div className="summary-trip-details">
                    <div className="s-row"><strong>Güzergah:</strong> {reservation.trip.origin} - {reservation.trip.destination}</div>
                    <div className="s-row"><strong>Firma:</strong> {reservation.trip.company}</div>
-                   <div className="s-row"><strong>Koltuklar:</strong> {reservation.seats.join(', ')} ({reservation.seats.length} Adet)</div>
+                   <div className="s-row"><strong>Koltuklar:</strong> {reservation.seats.map(s => s.seatNumber).join(', ')} ({reservation.seats.length} Adet)</div>
                    <div className="s-row"><strong>Tarih:</strong> {new Date(reservation.trip.departureTime).toLocaleDateString()}</div>
                 </div>
                 

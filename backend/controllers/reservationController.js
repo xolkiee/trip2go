@@ -1,5 +1,6 @@
 const Trip = require('../models/Trip');
 const Reservation = require('../models/Reservation');
+const Ticket = require('../models/Ticket');
 
 // @desc    Geçici Koltuk Kilitleme (10 Dk)
 // @route   POST /api/reservations
@@ -22,16 +23,72 @@ const createReservation = async (req, res) => {
     }
 
     // Seçilen koltukların satılmış (occupied) olup olmadığını kontrol et
-    for (const seatNum of seats) {
-       const seat = trip.seats.find(s => s.seatNumber === Number(seatNum));
+    for (const seatReq of seats) {
+       const seatNum = Number(seatReq.seatNumber);
+       const seat = trip.seats.find(s => s.seatNumber === seatNum);
        if (!seat) return res.status(404).json({ success: false, message: `${seatNum} numaralı koltuk bulunamadı.` });
        if (seat.status === 'occupied') {
           return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk zaten satılmış.` });
        }
     }
 
+    // ** GENDER-LOCK ADJACENCY LOGIC **
+    if (trip.type === 'bus') {
+       const activeReservations = await Reservation.find({ trip: tripId, expiresAt: { $gt: Date.now() } });
+
+       for (const seatReq of seats) {
+          const seatNum = Number(seatReq.seatNumber);
+          const myGender = seatReq.gender;
+
+          let adjacentNum = null;
+          if (trip.seatLayout === '2+1') {
+             if (seatNum % 3 === 2) adjacentNum = seatNum + 1;
+             else if (seatNum % 3 === 0) adjacentNum = seatNum - 1;
+          } else if (trip.seatLayout === '2+2') {
+             if (seatNum % 2 === 1) adjacentNum = seatNum + 1;
+             else if (seatNum % 2 === 0) adjacentNum = seatNum - 1;
+          }
+
+          if (adjacentNum) {
+             const inMyCart = seats.find(s => Number(s.seatNumber) === adjacentNum);
+             if (inMyCart) continue; // Aynı sepette birlikte alıyorsa sorun yok
+
+             const adjSeatInTrip = trip.seats.find(s => s.seatNumber === adjacentNum);
+             let adjGender = null;
+
+             if (adjSeatInTrip && adjSeatInTrip.status === 'occupied') {
+                // Eğer bu koltuk şu an giriş yapan kullanıcıya aitse (daha önceden o almışsa), zıt cinsiyet almasına müsaade et!
+                const myPastTicket = await Ticket.findOne({
+                   trip: tripId,
+                   seatNumber: adjacentNum,
+                   user: req.user._id,
+                   status: { $ne: 'cancelled' }
+                });
+
+                if (!myPastTicket) {
+                   adjGender = adjSeatInTrip.gender; // Başkasına ait kalıcı cinsiyet
+                }
+             } else {
+                const reservedDoc = activeReservations.find(r => r.seats.some(s => s.seatNumber === adjacentNum));
+                if (reservedDoc) {
+                   const sInfo = reservedDoc.seats.find(s => s.seatNumber === adjacentNum);
+                   adjGender = sInfo.gender; // Geçici kilit konan cinsiyet
+                }
+             }
+
+             if (adjGender && adjGender !== myGender) {
+                return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk, yanındaki (${adjacentNum}) karşıt cinsiyet nedeniyle seçilemez.` });
+             }
+          }
+       }
+    }
+
     // Seçili koltuklara ait devam eden (10 dksı dolmamış) başka bir kullanıcının rezervasyonu var mı?
-    const existingReservations = await Reservation.find({ trip: tripId, seats: { $in: seats } });
+    const seatNumbersOnly = seats.map(s => Number(s.seatNumber));
+    const existingReservations = await Reservation.find({ 
+       trip: tripId, 
+       'seats.seatNumber': { $in: seatNumbersOnly } 
+    });
     
     for (const existingRes of existingReservations) {
       if (existingRes.expiresAt > Date.now()) {
