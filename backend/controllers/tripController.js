@@ -97,6 +97,19 @@ const searchTrips = async (req, res) => {
         expiresAt: { $gt: Date.now() }
     });
 
+    const Review = require('../models/Review');
+    const uniqueAdmins = [...new Set(results.map(t => t.createdBy?.toString()).filter(Boolean))];
+    const adminRatings = {};
+    for (const adminId of uniqueAdmins) {
+        const adminTrips = await Trip.find({ createdBy: adminId }).select('_id');
+        const adminTripIds = adminTrips.map(t => t._id);
+        const reviews = await Review.find({ tripId: { $in: adminTripIds } });
+        if (reviews.length > 0) {
+            const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+            adminRatings[adminId] = { avg: avg.toFixed(1), count: reviews.length };
+        }
+    }
+
     const mappedResults = results.map(t => {
       const tripObj = t.toObject();
       const tripReservationsLength = activeReservations.filter(r => r.trip.toString() === tripObj._id.toString()).length;
@@ -112,14 +125,20 @@ const searchTrips = async (req, res) => {
         features.unshift(tripObj.seatLayout); // Add seatLayout to the beginning of features
       }
 
+      let ratingInfo = null;
+      if (tripObj.createdBy && adminRatings[tripObj.createdBy.toString()]) {
+         ratingInfo = adminRatings[tripObj.createdBy.toString()];
+      }
+
       return {
         id: tripObj._id,
         ...tripObj,
         seats: undefined, // Koltuk listesini arama sonucunda gönderme
         availableSeats,
         totalSeats: tripObj.seats.length,
-        features: features, // Use the modified features array
-        seatLayout: tripObj.seatLayout // Layout bilgisini koruruz
+        features: features, 
+        seatLayout: tripObj.seatLayout,
+        ratingInfo
       };
     });
 

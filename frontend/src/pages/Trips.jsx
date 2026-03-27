@@ -242,7 +242,12 @@ const Trips = () => {
             {trips.map(trip => (
               <div key={trip.id} className="trip-card" onClick={() => navigate(`/trips/${trip.id}`)}>
                 <div className="trip-card-left">
-                  <div className="trip-company-name">{trip.company}</div>
+                  <div className="trip-company-name">
+                     {trip.company}
+                     <div style={{fontSize: '0.85rem', color: '#f59e0b', marginTop: '4px', fontWeight: 'bold'}}>
+                        {trip.ratingInfo ? `⭐ ${trip.ratingInfo.avg} (${trip.ratingInfo.count} Değerlendirme)` : '⭐ Puanlanmamış'}
+                     </div>
+                  </div>
                   <div className="trip-features">
                     {trip.features?.map((f, i) => <span key={i} className="feature-badge">{f}</span>)}
                   </div>
