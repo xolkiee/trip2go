@@ -11,26 +11,38 @@ const AdminTripUpdate = () => {
     destination: '',
     date: '',
     time: '',
-    price: '',
-    totalSeats: ''
+    arrivalTime: '',
+    price: ''
   });
 
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
 
-  // Normalde burada bir useEffect ile id'ye göre DB'den mevcut sefer bilgileri çekilir.
-  // Biz dummy data (sahte veri) kullanacağımız için örnek verilerle dolduruyoruz.
   useEffect(() => {
-    if (id) {
-      setFormData({
-        departure: 'İstanbul',
-        destination: 'Ankara',
-        date: '2026-04-01',
-        time: '14:00',
-        price: '300',
-        totalSeats: '40'
-      });
-    }
+    const fetchTripDetails = async () => {
+      if (!id) return;
+      try {
+        const res = await fetch(`http://localhost:5000/api/trips/${id}/details`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          const trip = data.data;
+          const depDate = new Date(trip.departureTime);
+          const arrDate = new Date(trip.arrivalTime);
+          
+          setFormData({
+            departure: trip.origin,
+            destination: trip.destination,
+            price: trip.price,
+            date: depDate.toISOString().split('T')[0],
+            time: depDate.toTimeString().split(' ')[0].substring(0,5),
+            arrivalTime: arrDate.toTimeString().split(' ')[0].substring(0,5)
+          });
+        }
+      } catch (err) {
+        console.error("Sefer bilgisi alınamadı:", err);
+      }
+    };
+    fetchTripDetails();
   }, [id]);
 
   const handleChange = (e) => {
@@ -49,7 +61,8 @@ const AdminTripUpdate = () => {
       const response = await fetch(`http://localhost:5000/api/admin/trips/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('trip2go_token')}`
         },
         body: JSON.stringify(formData)
       });
@@ -120,8 +133,8 @@ const AdminTripUpdate = () => {
                   <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} min="0" required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="totalSeats">Toplam Koltuk Sayısı</label>
-                  <input type="number" id="totalSeats" name="totalSeats" value={formData.totalSeats} onChange={handleChange} min="1" required />
+                  <label htmlFor="arrivalTime">Varış Saati</label>
+                  <input type="time" id="arrivalTime" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} required />
                 </div>
               </div>
 

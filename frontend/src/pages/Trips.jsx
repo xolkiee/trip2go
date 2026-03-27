@@ -83,11 +83,12 @@ const Trips = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Search parameters
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [tripDate, setTripDate] = useState('');
-  const [type, setType] = useState('bus'); // 'bus' veya 'flight'
+  // Search parameters - sessionStorage ile kalıcılık sağlanıyor
+  const [origin, setOrigin] = useState(sessionStorage.getItem('trip2go_origin') || '');
+  const [destination, setDestination] = useState(sessionStorage.getItem('trip2go_dest') || '');
+  const [tripDate, setTripDate] = useState(sessionStorage.getItem('trip2go_date') || '');
+  const [searchedDate, setSearchedDate] = useState(''); // Aramaya basıldığındaki tarihi tutar
+  const [type, setType] = useState(sessionStorage.getItem('trip2go_type') || 'bus'); // 'bus' veya 'flight'
 
   const navigate = useNavigate();
 
@@ -115,12 +116,22 @@ const Trips = () => {
     setType(newType);
     setOrigin('');
     setDestination('');
+    sessionStorage.setItem('trip2go_type', newType);
+    sessionStorage.removeItem('trip2go_origin');
+    sessionStorage.removeItem('trip2go_dest');
   };
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
+    setSearchedDate(tripDate); // Aramanın yapıldığı o anki tarihi sabitle
+
+    // Arama yapıldığı an verileri SessionStorage'a kaydet (Sayfa yenilense / geri dönülse bile kalsın)
+    sessionStorage.setItem('trip2go_origin', origin);
+    sessionStorage.setItem('trip2go_dest', destination);
+    sessionStorage.setItem('trip2go_date', tripDate);
+    sessionStorage.setItem('trip2go_type', type);
 
     try {
       const queryParams = new URLSearchParams();
@@ -264,7 +275,7 @@ const Trips = () => {
           </div>
         ) : (
           <div className="no-results-card">
-            <h3>Üzgünüz, {tripDate ? `${tripDate} tarihindeki` : ''} kriterlerinize uygun sefer bulunamadı.</h3>
+            <h3>Üzgünüz, {searchedDate ? `${searchedDate} tarihindeki` : ''} kriterlerinize uygun sefer bulunamadı.</h3>
             <p>Farklı bir tarih veya güzergah deneyebilirsiniz!</p>
           </div>
         )}

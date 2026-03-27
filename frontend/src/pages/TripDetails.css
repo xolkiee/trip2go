@@ -140,6 +140,20 @@
 }
 
 .seat-box.available { background-color: white; border: 2px solid #cbd5e1; }
+.seat-map-legend .occupied {
+  background-color: #64748b;
+  border-color: #475569;
+}
+
+.seat-map-legend .reserved {
+  background-color: #f59e0b;
+  border-color: #d97706;
+}
+
+.seat-map-legend .selected {
+  background-color: #ef4444;
+  border-color: #ef4444;
+}
 .seat-box.occupied { background-color: #cbd5e1; border: 2px solid #94a3b8; }
 .seat-box.selected { background-color: var(--primary-orange); border: 2px solid var(--primary-orange); }
 
@@ -168,19 +182,36 @@
 
 .seats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: 15px;
-  /* Kidoridotu style gap for aisle: 2 seats, big gap, 2 seats. We can use grid placement or CSS child selectors */
 }
 
-/* Add custom gap for the aisle */
-.seats-grid .seat:nth-child(4n - 1) {
-  margin-left: 40px;
+/* 2+2 LAYOUT STYLES (Dikey / 4 Sütunlu) */
+.layout-2-2 {
+  grid-template-columns: repeat(4, auto);
+}
+.layout-2-2 .seat:nth-child(4n - 1) {
+  margin-left: 50px; /* Koridor Boşluğu */
+}
+
+/* 2+1 LAYOUT STYLES (Dikey / 3 Sütunlu) */
+.layout-2-1 {
+  grid-template-columns: repeat(3, auto);
+}
+.layout-2-1 .seat:nth-child(3n - 1) {
+  margin-left: 50px; /* Koridor Boşluğu */
+}
+
+/* FLIGHT LAYOUT STYLES (Dikey / 6 Sütunlu) */
+.layout-flight {
+  grid-template-columns: repeat(6, auto);
+}
+.layout-flight .seat:nth-child(6n - 2) {
+  margin-left: 50px; /* Koridor Boşluğu */
 }
 
 .seat {
-  width: 45px;
-  height: 45px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +219,8 @@
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  border: 2px solid;
   user-select: none;
 }
 
@@ -204,14 +236,21 @@
 }
 
 .seat.occupied {
-  background-color: #cbd5e1;
-  border: 2px solid #94a3b8;
-  color: #64748b;
+  background-color: #64748b;
+  border-color: #475569;
+  color: white;
+  cursor: not-allowed;
+}
+
+.seat.reserved {
+  background-color: #f59e0b;
+  border-color: #d97706;
+  color: white;
   cursor: not-allowed;
 }
 
 .seat.selected {
-  background-color: var(--primary-orange);
+  background-color: #ef4444;
   border: 2px solid var(--primary-orange);
   color: white;
   transform: scale(1.1);
@@ -471,10 +510,14 @@
     height: 35px;
     font-size: 0.8rem;
   }
-  .seats-grid .seat:nth-child(4n - 1) {
+  .layout-2-2 .seat:nth-child(4n - 1) {
+    margin-left: 20px;
+  }
+  .layout-2-1 .seat:nth-child(3n - 1) {
     margin-left: 20px;
   }
   .bus-layout {
     padding: 20px;
+    border-radius: 20px 20px 10px 10px;
   }
 }
