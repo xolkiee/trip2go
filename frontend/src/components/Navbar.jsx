@@ -5,6 +5,9 @@ import './Navbar.css';
 const Navbar = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('trip2go_token');
+  const userStr = localStorage.getItem('trip2go_user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = user && user.role === 'admin';
 
   const handleLogout = () => {
     localStorage.removeItem('trip2go_token');
@@ -26,6 +29,11 @@ const Navbar = () => {
             <>
               <Link to="/my-trips" className="nav-link">Seyahatlerim</Link>
               <Link to="/profile" className="nav-link">Profilim</Link>
+              {isAdmin && (
+                <Link to="/admin/trips/new" className="nav-link" style={{ color: '#d32f2f', fontWeight: 'bold' }}>
+                  ⚙️ Admin Paneli
+                </Link>
+              )}
               <button onClick={handleLogout} className="nav-btn logout-btn">
                 Çıkış Yap
               </button>

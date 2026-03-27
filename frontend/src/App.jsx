@@ -7,7 +7,9 @@ import AdminAuth from './pages/AdminAuth';
 import ForgotPassword from './pages/ForgotPassword';
 import Trips from './pages/Trips';
 import TripDetails from './pages/TripDetails';
+import Checkout from './pages/Checkout';
 import MyTrips from './pages/MyTrips';
+import Profile from './pages/Profile';
 import AdminRoute from './components/AdminRoute';
 
 function App() {
@@ -23,7 +25,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/trips" element={<Trips />} />
           <Route path="/trips/:id" element={<TripDetails />} />
+          <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/my-trips" element={<MyTrips />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/admin/trips/new" element={<AdminRoute><AdminTripCreate /></AdminRoute>} />
           <Route path="/admin/trips/:id/edit" element={<AdminRoute><AdminTripUpdate /></AdminRoute>} />
         </Routes>
