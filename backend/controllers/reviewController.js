@@ -37,16 +37,45 @@ const addReview = async (req, res) => {
 const getTripReviews = async (req, res) => {
   try {
     const tripId = req.params.id;
-    const tripReviews = await Review.find({ tripId }).sort({ createdAt: -1 });
+    const Trip = require('../models/Trip');
 
-    const mapped = tripReviews.map(r => ({
-      id: r._id,
-      tripId: r.tripId,
-      userId: r.userId,
-      rating: r.rating,
-      comment: r.comment,
-      createdAt: r.createdAt
-    }));
+    const currentTrip = await Trip.findById(tripId);
+    if (!currentTrip || !currentTrip.createdBy) {
+        // Eski tip veya adminsiz bir sefese: Sadece o sefere ait klasik veriyi dön
+        const tripReviews = await Review.find({ tripId }).sort({ createdAt: -1 });
+        const mapEski = tripReviews.map(r => ({
+           id: r._id, tripId: r.tripId, userId: r.userId, maskedUser: r.userId, rating: r.rating, comment: r.comment, createdAt: r.createdAt
+        }));
+        return res.status(200).json({ success: true, count: mapEski.length, data: mapEski });
+    }
+
+    const adminId = currentTrip.createdBy;
+    const adminTrips = await Trip.find({ createdBy: adminId }).select('_id origin destination departureTime company');
+    const adminTripIds = adminTrips.map(t => t._id);
+
+    const tripReviews = await Review.find({ tripId: { $in: adminTripIds } })
+                                    .populate('tripId', 'origin destination departureTime company')
+                                    .sort({ createdAt: -1 });
+
+    const maskName = (name) => {
+        if (!name) return "Müşteri";
+        return name.split(' ').map(part => part.charAt(0) + '*'.repeat(Math.max(part.length - 1, 1))).join(' ');
+    };
+
+    const mapped = tripReviews.map(r => {
+      const tData = r.tripId || {}; 
+      return {
+        id: r._id,
+        tripId: tData._id || r.tripId,
+        userId: r.userId, // Gerçek kullanıcı (Sadece kendi sepetiyle eşleştirebilmek için gerekli)
+        maskedUser: maskName(r.userId), // Yabancılara gösterilecek sansürlü isim (F**** B****)
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        tripDetails: tData.origin ? `${tData.origin} - ${tData.destination}` : 'Bilinmeyen Güzergah',
+        tripDate: tData.departureTime || null
+      };
+    });
 
     res.status(200).json({
       success: true,

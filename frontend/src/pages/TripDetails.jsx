@@ -14,6 +14,7 @@ const TripDetails = () => {
   const [myReservation, setMyReservation] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showGenderModal, setShowGenderModal] = useState({ visible: false, seatNumber: null });
+  const [reviews, setReviews] = useState([]);
 
   // Sadece okuma amaçlı (Ekleme MyTrips içerisine taşınıyor)
 
@@ -27,6 +28,12 @@ const TripDetails = () => {
         
         if (tData.success) {
            setTrip(tData.data);
+        }
+
+        const revRes = await fetch(`http://localhost:5000/api/reviews/trip/${id}`);
+        const revData = await revRes.json();
+        if (revData.success) {
+           setReviews(revData.data);
         }
 
         // Check active reservation
@@ -202,6 +209,31 @@ const TripDetails = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Yorumlar Bölümü */}
+          <div className="card reviews-card" style={{ marginTop: '20px' }}>
+             <h2 className="card-title">Yolcu Değerlendirmeleri ({reviews.length})</h2>
+             <div className="reviews-scroll-container" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
+                {reviews.length === 0 ? (
+                   <p className="no-reviews-msg" style={{color: '#64748b', fontStyle: 'italic'}}>Bu firma/sefer için henüz bir değerlendirme yapılmamış. İlk deneyimleyen siz olun!</p>
+                ) : (
+                   reviews.map(r => (
+                      <div key={r.id} className="review-item" style={{ borderBottom: '1px solid #e2e8f0', padding: '15px 0' }}>
+                         <div className="review-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <strong style={{ color: '#0f172a' }}>{r.maskedUser}</strong>
+                            <div className="review-stars" style={{ color: '#f59e0b', fontSize: '1.2rem' }}>
+                               {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                            </div>
+                         </div>
+                         <div className="review-trip-info" style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '8px' }}>
+                            🗓 {new Date(r.tripDate).toLocaleDateString('tr-TR')} | 📍 {r.tripDetails}
+                         </div>
+                         <p style={{ margin: 0, color: '#334155', lineHeight: '1.5', fontStyle: 'italic' }}>"{r.comment}"</p>
+                      </div>
+                   ))
+                )}
+             </div>
           </div>
 
         </div>
