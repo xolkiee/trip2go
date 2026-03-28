@@ -57,7 +57,7 @@ const Auth = () => {
     // Şimdilik Backend henüz bağlanmadığı için dummy davranış gösterelim 
     // veya Ömer'in yazdığı /api/auth rotalarına istek atalım.
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`, {
+      const response = await fetch(`${'https://trip2go-rho.vercel.app'}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(

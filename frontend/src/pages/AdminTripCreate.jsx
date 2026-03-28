@@ -113,7 +113,7 @@ const AdminTripCreate = () => {
     // API'den iller ve havalimanları çekiliyor
     const fetchLocations = async () => {
       try {
-        const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/locations');
+        const res = await fetch(('https://trip2go-rho.vercel.app') + '/api/locations');
         const data = await res.json();
         if (data.success) {
           setLocations(data.data);
@@ -127,7 +127,7 @@ const AdminTripCreate = () => {
       try {
         const token = localStorage.getItem('trip2go_token');
         if(!token) return setLoadingTrips(false);
-        const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
+        const res = await fetch(('https://trip2go-rho.vercel.app') + '/api/admin/trips', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -147,7 +147,7 @@ const AdminTripCreate = () => {
     if (!window.confirm("Bu seferi yayından kaldırmak istediğinize emin misiniz?")) return;
     try {
       const token = localStorage.getItem('trip2go_token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/trips/${id}`, {
+      const res = await fetch(`${'https://trip2go-rho.vercel.app'}/api/admin/trips/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -200,7 +200,7 @@ const AdminTripCreate = () => {
 
     try {
       const token = localStorage.getItem('trip2go_token');
-      const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
+      const response = await fetch(('https://trip2go-rho.vercel.app') + '/api/admin/trips', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +227,7 @@ const AdminTripCreate = () => {
         });
         
         // Yeni ekleneni tabloya da düşürmek için tekrar fetchle
-        const checkRes = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
+        const checkRes = await fetch(('https://trip2go-rho.vercel.app') + '/api/admin/trips', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const checkData = await checkRes.json();
