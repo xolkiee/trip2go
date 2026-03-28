@@ -22,7 +22,7 @@ const AdminTripUpdate = () => {
     const fetchTripDetails = async () => {
       if (!id) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/trips/${id}/details`);
+        const res = await fetch(`https://trip2go-rho.vercel.app/api/trips/${id}/details`);
         const data = await res.json();
         if (data.success && data.data) {
           const trip = data.data;
@@ -58,7 +58,7 @@ const AdminTripUpdate = () => {
     setStatus({ type: '', message: '' });
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/trips/${id}`, {
+      const response = await fetch(`https://trip2go-rho.vercel.app/api/admin/trips/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

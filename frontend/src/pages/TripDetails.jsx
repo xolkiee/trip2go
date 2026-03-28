@@ -23,14 +23,14 @@ const TripDetails = () => {
       try {
         setLoading(true);
         // Backend'den detayları çek (Henüz bağlı değilse hata fırlatabilir, fallback düşünebiliriz ama şimdilik try/catch işler)
-        const tRes = await fetch(`http://localhost:5000/api/trips/${id}/details`);
+        const tRes = await fetch(`https://trip2go-rho.vercel.app/api/trips/${id}/details`);
         const tData = await tRes.json();
         
         if (tData.success) {
            setTrip(tData.data);
         }
 
-        const revRes = await fetch(`http://localhost:5000/api/reviews/trip/${id}`);
+        const revRes = await fetch(`https://trip2go-rho.vercel.app/api/reviews/trip/${id}`);
         const revData = await revRes.json();
         if (revData.success) {
            setReviews(revData.data);
@@ -47,7 +47,7 @@ const TripDetails = () => {
                } catch(e) {}
            }
 
-           const rRes = await fetch(`http://localhost:5000/api/reservations/user/active/${id}`, {
+           const rRes = await fetch(`https://trip2go-rho.vercel.app/api/reservations/user/active/${id}`, {
               headers: { 'Authorization': `Bearer ${token}` }
            });
            const rData = await rRes.json();
@@ -104,7 +104,7 @@ const TripDetails = () => {
     setErrorMsg('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/reservations', {
+      const response = await fetch('https://trip2go-rho.vercel.app/api/reservations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
