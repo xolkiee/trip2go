@@ -28,7 +28,7 @@ const Profile = () => {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch('https://trip2go-rho.vercel.app/api/users/profile', {
+        const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/users/profile', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -93,7 +93,7 @@ const Profile = () => {
       const payload = { firstName, lastName, phone };
       if (password) payload.password = password;
 
-      const response = await fetch('https://trip2go-rho.vercel.app/api/users/profile', {
+      const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/users/profile', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ const Profile = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      const response = await fetch('https://trip2go-rho.vercel.app/api/users/profile', {
+      const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/users/profile', {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

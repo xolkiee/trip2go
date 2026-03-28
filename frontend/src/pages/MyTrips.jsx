@@ -46,7 +46,7 @@ const MyTrips = () => {
       const user = userStr ? JSON.parse(userStr) : { firstName: 'Misafir', lastName: 'Kullanıcı' };
       const userId = `${user.firstName} ${user.lastName}`; 
 
-      const tRes = await fetch('https://trip2go-rho.vercel.app/api/users/profile', {
+      const tRes = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/users/profile', {
          headers: { 'Authorization': `Bearer ${token}` }
       });
       const tData = await tRes.json();
@@ -57,7 +57,7 @@ const MyTrips = () => {
         // Var olan yorumları test et (Sadece benzersiz seferler için yapabiliriz ama basitçe döngüyle de olur)
         const uniqueTrips = [...new Set(tData.tickets.filter(t => t.trip).map(t => t.trip._id))];
         for (const tripId of uniqueTrips) {
-          const rRes = await fetch(`https://trip2go-rho.vercel.app/api/reviews/trip/${tripId}`);
+          const rRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews/trip/${tripId}`);
           const rData = await rRes.json();
           if (rData.success) {
             const userReview = rData.data.find(r => r.userId === userId && r.tripId === tripId);
@@ -92,7 +92,7 @@ const MyTrips = () => {
   const handleDeleteReview = async (tripId, reviewId) => {
     if (!window.confirm("Yorumunuzu kalıcı olarak silmek istediğinize emin misiniz?")) return;
     try {
-      const res = await fetch(`https://trip2go-rho.vercel.app/api/reviews/${reviewId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('trip2go_token')}` }
       });
@@ -116,7 +116,7 @@ const MyTrips = () => {
     const existingReview = reviews[activeReviewTripId];
     try {
       if (existingReview) {
-        const res = await fetch(`https://trip2go-rho.vercel.app/api/reviews/${existingReview.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews/${existingReview.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rating, comment })
@@ -127,7 +127,7 @@ const MyTrips = () => {
           setActiveReviewTripId(null);
         } else alert(data.message);
       } else {
-        const res = await fetch(`https://trip2go-rho.vercel.app/api/reviews`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tripId: activeReviewTripId, userId, rating, comment })
@@ -146,7 +146,7 @@ const MyTrips = () => {
   const handleCancelTicket = async (ticketId) => {
     if (!window.confirm("Biletinizi iptal etmek istediğinize emin misiniz? İptal edilen biletlerin iadesi yapılamaz.")) return;
     try {
-      const res = await fetch(`https://trip2go-rho.vercel.app/api/tickets/${ticketId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tickets/${ticketId}`, {
          method: 'DELETE',
          headers: { 'Authorization': `Bearer ${localStorage.getItem('trip2go_token')}` }
       });
@@ -170,7 +170,7 @@ const MyTrips = () => {
         return;
     }
     try {
-       const res = await fetch(`https://trip2go-rho.vercel.app/api/tickets/${ticketId}/passenger`, {
+       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tickets/${ticketId}/passenger`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ const MyTrips = () => {
                     <span className="route-date">{new Date(trip.departureTime).toLocaleDateString()} - {new Date(trip.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
                   <div className={`status-badge ${allCancelled ? 'danger' : isCompleted ? 'completed' : (isInProgress ? 'completed' : 'pending')}`} style={isInProgress ? {backgroundColor: '#eab308', color: '#fff'} : {}}>
-                    {allCancelled ? '❌ Tüm Biletler İptal Edildi' : (isCompleted ? 'Sefer Tamamlandı' : (isInProgress ? 'Sefer Gerçekleşiyor' : 'Sefer Bekleniyor'))}
+                    {allCancelled ? 'Tüm Biletler İptal Edildi' : (isCompleted ? 'Sefer Tamamlandı' : (isInProgress ? 'Sefer Gerçekleşiyor' : 'Sefer Bekleniyor'))}
                   </div>
                 </div>
 

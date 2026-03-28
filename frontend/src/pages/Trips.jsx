@@ -99,7 +99,7 @@ const Trips = () => {
     // API'den binlerce İl/İlçe/Havalimanı verisini çek
     const fetchLocations = async () => {
       try {
-        const res = await fetch('https://trip2go-rho.vercel.app/api/locations');
+        const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/locations');
         const data = await res.json();
         if (data.success) {
           setLocations(data.data);
@@ -140,7 +140,7 @@ const Trips = () => {
       if (tripDate) queryParams.append('tripDate', tripDate);
       if (type) queryParams.append('type', type);
 
-      const res = await fetch(`https://trip2go-rho.vercel.app/api/trips/search?${queryParams.toString()}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/trips/search?${queryParams.toString()}`);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || 'Seferler alınırken hata oluştu.');
@@ -260,7 +260,7 @@ const Trips = () => {
                       <span className="station">{trip.origin}</span>
                     </div>
                     <div className="timeline-bar">
-                      <span className="duration-icon">{trip.type === 'flight' ? '✈️' : '🚌'}</span>
+                      <span className="duration-icon">{trip.type === 'flight' ? '' : ''}</span>
                       <div className="line"></div>
                     </div>
                     <div className="timeline-point">

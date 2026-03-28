@@ -113,7 +113,7 @@ const AdminTripCreate = () => {
     // API'den iller ve havalimanları çekiliyor
     const fetchLocations = async () => {
       try {
-        const res = await fetch('https://trip2go-rho.vercel.app/api/locations');
+        const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/locations');
         const data = await res.json();
         if (data.success) {
           setLocations(data.data);
@@ -127,7 +127,7 @@ const AdminTripCreate = () => {
       try {
         const token = localStorage.getItem('trip2go_token');
         if(!token) return setLoadingTrips(false);
-        const res = await fetch('https://trip2go-rho.vercel.app/api/admin/trips', {
+        const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -147,7 +147,7 @@ const AdminTripCreate = () => {
     if (!window.confirm("Bu seferi yayından kaldırmak istediğinize emin misiniz?")) return;
     try {
       const token = localStorage.getItem('trip2go_token');
-      const res = await fetch(`https://trip2go-rho.vercel.app/api/admin/trips/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/trips/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -200,7 +200,7 @@ const AdminTripCreate = () => {
 
     try {
       const token = localStorage.getItem('trip2go_token');
-      const response = await fetch('https://trip2go-rho.vercel.app/api/admin/trips', {
+      const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +227,7 @@ const AdminTripCreate = () => {
         });
         
         // Yeni ekleneni tabloya da düşürmek için tekrar fetchle
-        const checkRes = await fetch('https://trip2go-rho.vercel.app/api/admin/trips', {
+        const checkRes = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/trips', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const checkData = await checkRes.json();
@@ -371,7 +371,7 @@ const AdminTripCreate = () => {
                   {myTrips.map(t => (
                     <tr key={t._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '12px' }}>{t.company}</td>
-                      <td>{t.type === 'flight' ? '✈️ Uçak' : '🚌 Otobüs'}</td>
+                      <td>{t.type === 'flight' ? 'Uçak' : 'Otobüs'}</td>
                       <td><strong>{t.origin}</strong> → <strong>{t.destination}</strong></td>
                       <td>{new Date(t.departureTime).toLocaleDateString('tr-TR')} {new Date(t.departureTime).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</td>
                       <td><span style={{color:'var(--primary-orange)', fontWeight:'bold'}}>{t.price} ₺</span></td>
@@ -379,12 +379,12 @@ const AdminTripCreate = () => {
                          <button 
                            onClick={() => navigate(`/admin/trips/${t._id}/edit`)}
                            style={{ padding: '6px 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                           ✏️ Düzenle
+                           Düzenle
                          </button>
                          <button 
                            onClick={() => handleDelete(t._id)} 
                            style={{ marginLeft: '10px', padding: '6px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                           🗑️ Sil
+                           Sil
                          </button>
                       </td>
                     </tr>

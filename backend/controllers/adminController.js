@@ -35,10 +35,11 @@ const createTrip = async (req, res) => {
     }
 
     // Z kullanmadığımız için yerel saat dilimine göre algılar
-    const departureDateStr = `${date}T${time}:00`;
+    // Vercel serverless ortamı UTC çalıştığı için TR saati olduğunu +03:00 ile belirtiyoruz
+    const departureDateStr = `${date}T${time}:00+03:00`;
     const departureDateObj = new Date(departureDateStr);
 
-    let arrivalDateObj = new Date(`${date}T${arrivalTime}:00`);
+    let arrivalDateObj = new Date(`${date}T${arrivalTime}:00+03:00`);
 
     // Eğer varış saati, kalkış saatinden önceyse (gece yarısını geçmişse) ertesi gün kabul edelim
     if (arrivalDateObj < departureDateObj) {
@@ -103,9 +104,9 @@ const updateTrip = async (req, res) => {
     if (price) trip.price = Number(price);
     
     if (date && time && arrivalTime) {
-      const departureDateStr = `${date}T${time}:00`;
+      const departureDateStr = `${date}T${time}:00+03:00`;
       const departureDateObj = new Date(departureDateStr);
-      let arrivalDateObj = new Date(`${date}T${arrivalTime}:00`);
+      let arrivalDateObj = new Date(`${date}T${arrivalTime}:00+03:00`);
       if (arrivalDateObj < departureDateObj) arrivalDateObj.setDate(arrivalDateObj.getDate() + 1);
       
       trip.departureTime = departureDateObj;
