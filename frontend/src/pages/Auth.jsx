@@ -42,6 +42,13 @@ const Auth = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
+    if (!emailRegex.test(email)) {
+      setErrorMsg('Lütfen sadece .com uzantılı geçerli bir e-posta adresi giriniz (örnek: isim@domain.com).');
+      return;
+    }
+
     setLoading(true);
 
     const isLogin = activeTab === 'login';
