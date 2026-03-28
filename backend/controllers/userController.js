@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Review = require('../models/Review');
 const Ticket = require('../models/Ticket');
 const Trip = require('../models/Trip');
+const Reservation = require('../models/Reservation');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -114,10 +115,30 @@ const deleteUserProfile = async (req, res) => {
           const seatIndex = trip.seats.findIndex(s => s.seatNumber === ticket.seatNumber);
           if (seatIndex !== -1) {
              trip.seats[seatIndex].status = 'available';
+             // Kritik Nokta: Cinsiyeti ve Yolcu kimliğini sıfırlamalıyız ki UI mavi/pembe takılı kalmasın
+             trip.seats[seatIndex].gender = null;
+             trip.seats[seatIndex].passengerId = null; 
              await trip.save();
           }
        }
     }
+
+    // 2. ADIM: Satın alınmamış ama sepette kilitli duran geçici rezervasyonları temizle ve koltukları aç
+    const activeReservations = await Reservation.find({ user: user._id });
+    for (const resItem of activeReservations) {
+       const trip = await Trip.findById(resItem.trip);
+       if (trip) {
+          for (const rs of resItem.seats) {
+             const sIndex = trip.seats.findIndex(ts => ts.seatNumber === rs.seatNumber);
+             if (sIndex !== -1 && trip.seats[sIndex].status === 'reserved') {
+                trip.seats[sIndex].status = 'available';
+                trip.seats[sIndex].gender = null;
+             }
+          }
+          await trip.save();
+       }
+    }
+    await Reservation.deleteMany({ user: user._id });
     
     // Tüm biletleri kalıcı silmeden, iptal edildi yapıyoruz ki muhasebede kalsın (Para iadesi yok mantığı)
     await Ticket.updateMany({ user: user._id }, { status: 'cancelled' });

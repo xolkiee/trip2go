@@ -11,6 +11,7 @@ const AdminAuth = () => {
   
   // Register States
   const [companyName, setCompanyName] = useState('');
+  const [companyType, setCompanyType] = useState('bus');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [secretKey, setSecretKey] = useState('');
@@ -88,12 +89,13 @@ const AdminAuth = () => {
       const response = await fetch(('https://trip2go-rho.vercel.app') + '/api/auth/admin-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           firstName: companyName, 
           lastName: 'Yetkilisi', 
           email: registerEmail, 
           password: registerPassword, 
-          secretKey 
+          secretKey,
+          companyType
         }),
       });
 
@@ -167,6 +169,14 @@ const AdminAuth = () => {
               <div className="form-group">
                 <label>Firma Adı</label>
                 <input type="text" placeholder="Örn: Pamukkale Turizm" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
+              </div>
+
+              <div className="form-group">
+                <label>Firmanızın Hizmet Türü</label>
+                <select value={companyType} onChange={(e) => setCompanyType(e.target.value)} required style={{padding: '12px', borderRadius: '6px', border: '1px solid #ddd', width: '100%', fontSize: '1rem'}}>
+                  <option value="bus">Otobüs</option>
+                  <option value="flight">Uçak</option>
+                </select>
               </div>
 
               <div className="form-group">

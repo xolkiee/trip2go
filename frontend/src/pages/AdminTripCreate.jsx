@@ -89,10 +89,23 @@ const SearchableSelect = ({ value, onChange, options, placeholder }) => {
 
 
 const AdminTripCreate = () => {
+  // LocalStorage'dan admin yetki sınırlarını çekiyoruz
+  const storedUserStr = localStorage.getItem('trip2go_user');
+  let adminCompany = '';
+  let adminType = 'bus'; // default fallback
+  
+  if (storedUserStr) {
+    try {
+      const userObj = JSON.parse(storedUserStr);
+      if (userObj.companyName) adminCompany = userObj.companyName;
+      if (userObj.companyType) adminType = userObj.companyType;
+    } catch (e) { }
+  }
+
   const [formData, setFormData] = useState({
-    company: '',
-    type: 'bus',
-    seatLayout: '2+1', // default bus layout
+    company: adminCompany || '',
+    type: adminType || 'bus',
+    seatLayout: adminType === 'flight' ? 'flight' : '2+1', // typea göre default layout
     departure: '',
     destination: '',
     date: '',
@@ -215,9 +228,9 @@ const AdminTripCreate = () => {
         setStatus({ type: 'success', message: 'Sefer başarıyla oluşturuldu!' });
         setCreatedTripId(result.data?._id || 'dummy_id');
         setFormData({
-            company: '',
-            type: 'bus',
-            seatLayout: '2+1',
+            company: adminCompany || '',
+            type: adminType || 'bus',
+            seatLayout: adminType === 'flight' ? 'flight' : '2+1',
             departure: '',
             destination: '',
             date: '',
@@ -273,11 +286,11 @@ const AdminTripCreate = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="company">Firma Adı</label>
-                  <input type="text" id="company" name="company" value={formData.company} onChange={handleChange} placeholder="Örn: Kamil Koç, THY" required />
+                  <input type="text" id="company" name="company" value={formData.company} onChange={handleChange} placeholder="Örn: Kamil Koç, THY" required readOnly={!!adminCompany} style={adminCompany ? {backgroundColor: '#e2e8f0', color: '#475569', cursor: 'not-allowed'} : {}} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="type">Taşıt Türü</label>
-                  <select id="type" name="type" value={formData.type} onChange={handleTypeChange} required style={{padding: '12px', borderRadius: '6px', border: '1px solid #ddd'}}>
+                  <select id="type" name="type" value={formData.type} onChange={handleTypeChange} required disabled={!!adminType} style={adminType ? {backgroundColor: '#e2e8f0', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', color: '#475569', cursor: 'not-allowed'} : {padding: '12px', borderRadius: '6px', border: '1px solid #ddd'}}>
                     <option value="bus">Otobüs</option>
                     <option value="flight">Uçak</option>
                   </select>

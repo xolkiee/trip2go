@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phone: { type: String, default: '' },
-  role: { type: String, default: 'user' },
+  role: { type: String, default: 'user' }, // 'user' veya 'admin'
+  companyName: { type: String, default: '' }, // Sadece adminler için firma adı
+  companyType: { type: String, enum: ['bus', 'flight', ''], default: '' }, // Adminler için taşıt türü
   resetToken: { type: String }
 }, { timestamps: true });
 
