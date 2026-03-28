@@ -25,6 +25,13 @@ const AdminAuth = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
+    if (!emailRegex.test(loginEmail)) {
+      setErrorMsg('Lütfen geçerli ve .com uzantılı bir e-posta adresi giriniz (örnek: admin@domain.com).');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -68,6 +75,13 @@ const AdminAuth = () => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
+    if (!emailRegex.test(registerEmail)) {
+      setErrorMsg('Lütfen geçerli ve .com uzantılı bir e-posta adresi giriniz (örnek: admin@domain.com).');
+      return;
+    }
+
     setLoading(true);
 
     try {
