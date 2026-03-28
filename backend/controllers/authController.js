@@ -92,7 +92,7 @@ const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role, companyName: user.companyName, companyType: user.companyType },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -108,7 +108,9 @@ const loginUser = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        companyName: user.companyName || '',
+        companyType: user.companyType || ''
       }
     });
 
@@ -194,10 +196,11 @@ const resetPassword = async (req, res) => {
 // @access  Public
 const registerAdminUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, secretKey } = req.body;
+    // Admin kayıt formundan companyType de gelecek
+    const { firstName, lastName, email, password, secretKey, companyType } = req.body;
 
-    if (!firstName || !lastName || !email || !password || !secretKey) {
-      return res.status(400).json({ message: 'Lütfen zorunlu tüm alanları doldurun.' });
+    if (!firstName || !lastName || !email || !password || !secretKey || !companyType) {
+      return res.status(400).json({ message: 'Lütfen zorunlu tüm alanları doldurun (Taşıt Türü dahil).' });
     }
 
     if (secretKey !== 'trip2go-admin') {
@@ -213,11 +216,13 @@ const registerAdminUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await User.create({
-      firstName,
+      firstName, // Frontend firstName'i şirket ismi olarak yolluyor
       lastName,
       email,
       password: hashedPassword,
-      role: 'admin'
+      role: 'admin',
+      companyName: firstName, // Orijinal plan: Firma ismi giriliyor, bunu companyName e kopyalayalım.
+      companyType: companyType // bus veya flight
     });
 
     res.status(201).json({
