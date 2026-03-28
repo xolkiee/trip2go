@@ -23,7 +23,7 @@ const Checkout = () => {
     const fetchReservation = async () => {
       try {
         const token = localStorage.getItem('trip2go_token');
-        const res = await fetch(`http://localhost:5000/api/reservations/${reservationId}`, {
+        const res = await fetch(`https://trip2go-rho.vercel.app/api/reservations/${reservationId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -194,7 +194,7 @@ const Checkout = () => {
       };
 
       const token = localStorage.getItem('trip2go_token');
-      const res = await fetch('http://localhost:5000/api/tickets', {
+      const res = await fetch('https://trip2go-rho.vercel.app/api/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +222,7 @@ const Checkout = () => {
   const handleCancelClick = async () => {
     try {
       const token = localStorage.getItem('trip2go_token');
-      await fetch(`http://localhost:5000/api/reservations/${reservationId}`, {
+      await fetch(`https://trip2go-rho.vercel.app/api/reservations/${reservationId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
