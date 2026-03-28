@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trip2go-backend
+    ports:
+      - "5000:5000"
+    environment:
+      # Eğer .env dosyanız varsa buradan okutabilirsiniz, veya doğrudan yazabilirsiniz
+      - MONGO_URI=${MONGO_URI:-mongodb+srv://furkanburakozturk1_db_user:45VOWqgsRTQsEOKx@cluster0.fihtt66.mongodb.net/trip2godb?retryWrites=true&w=majority}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-trip2go-key-2026}
+    restart: unless-stopped
+    networks:
+      - trip2go-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trip2go-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - trip2go-network
+
+networks:
+  trip2go-network:
+    driver: bridge
