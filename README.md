@@ -21,8 +21,8 @@ Trip2Go isimli bilet satış platformumuz, seyahat planlama ve bilet alma sürec
 
 ## Proje Linkleri
 
-- **REST API Adresi:** [api.yazmuh.com](https://api.yazmuh.com)
-- **Web Frontend Adresi:** [frontend.yazmuh.com](https://frontend.yazmuh.com)
+- **REST API Adresi:** [api.trip2go.com](https://trip2go-rho.vercel.app/)
+- **Web Frontend Adresi:** [frontend.trip2go.com](https://trip2go-frontend.vercel.app)
 
 ---
 

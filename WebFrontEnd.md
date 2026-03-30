@@ -8,96 +8,49 @@ Bu dokümanda, web uygulamasının kullanıcı arayüzü (UI) ve kullanıcı den
 
 ## Grup Üyelerinin Web Frontend Görevleri
 
-1. [Ali Tutar'ın Web Frontend Görevleri](Ali-Tutar/Ali-Tutar-Web-Frontend-Gorevleri.md)
-2. [Grup Üyesi 2'nin Web Frontend Görevleri](Grup-Uyesi-2/Grup-Uyesi-2-Frontend-Gorevleri.md)
-3. [Grup Üyesi 3'ün Web Frontend Görevleri](Grup-Uyesi-3/Grup-Uyesi-3-Frontend-Gorevleri.md)
-4. [Grup Üyesi 4'ün Web Frontend Görevleri](Grup-Uyesi-4/Grup-Uyesi-4-Frontend-Gorevleri.md)
-5. [Grup Üyesi 5'in Web Frontend Görevleri](Grup-Uyesi-5/Grup-Uyesi-5-Frontend-Gorevleri.md)
-6. [Grup Üyesi 6'nın Web Frontend Görevleri](Grup-Uyesi-6/Grup-Uyesi-6-Frontend-Gorevleri.md)
+1. [Furkan Burak Öztürk'ün Web Frontend Görevleri](Furkan-Burak-Öztürk/Furkan-Burak-Öztürk-Web-Frontend-Gorevleri.md)
+2. [Ömer Arı'nın Web Frontend Görevleri](Ömer-Arı/Ömer-Arı-Frontend-Gorevleri.md)
 
 ---
 
 ## Genel Web Frontend Prensipleri
 
 ### 1. Responsive Tasarım
-- **Mobile-First Approach:** Önce mobil tasarım, sonra desktop
-- **Breakpoints:** 
-  - Mobile: < 768px
-  - Tablet: 768px - 1024px
-  - Desktop: > 1024px
-- **Flexible Layouts:** CSS Grid ve Flexbox kullanımı
-- **Responsive Images:** srcset ve sizes attributes
-- **Touch-Friendly:** Minimum 44x44px touch targets
+- **Modern Layouts:** Sayfa tasarımları CSS Flexbox ve CSS Grid kullanılarak esnek bir yapıda oluşturulmuştur.
+- **Breakpoints:** Mobil, tablet ve masaüstü görünümleri için `@media` sorguları ile uyumluluk sağlanmıştır.
+- **Interactive UI:** Butonlar, inputlar ve koltuk seçim alanları dokunmatik cihazlara uygun boyutlarda (min 44x44px) tasarlanmıştır.
 
-### 2. Tasarım Sistemi
-- **CSS Framework:** Bootstrap, Tailwind CSS, Material-UI, veya custom
-- **Renk Paleti:** Tutarlı renk kullanımı (CSS variables)
-- **Tipografi:** Web-safe fonts veya web fonts (Google Fonts)
-- **Spacing:** Tutarlı padding ve margin değerleri (8px grid sistemi)
-- **Iconography:** Icon library (Font Awesome, Material Icons, Heroicons)
-- **Component Library:** Reusable UI components
+### 2. Tasarım Sistemi ve Stil Yönetimi
+- **Vanilla CSS:** Projede harici bir kütüphane yerine saf CSS (Vanilla CSS) tercih edilerek maksimum performans ve özelleştirme sağlanmıştır.
+- **Renk ve Tipografi:** `.css` dosyalarında genel değişkenler kullanılarak marka renkleri (Koyu Mavi, Turuncu, Slate tonları) ve modern tipografi (Inter/Roboto) standartlaştırılmıştır.
+- **Component Styling:** Her sayfa ve bileşen için özel `.css` dosyaları (örneğin: `TripDetails.css`, `Auth.css`) kullanılarak stil izolasyonu sağlanmıştır.
 
-### 3. Performans Optimizasyonu
-- **Code Splitting:** Route-based ve component-based splitting
-- **Lazy Loading:** Images, components, ve routes
-- **Minification:** CSS ve JavaScript minification
-- **Compression:** Gzip/Brotli compression
-- **Caching:** Browser caching, service worker (PWA)
-- **Bundle Size:** Tree shaking, dead code elimination
+### 3. Performans ve React Yapısı
+- **Vite:** Projenin build süreci için ultra hızlı Vite aracı kullanılmaktadır.
+- **Modern React:** React 19 özellikleri kullanılarak performanslı bir render akışı sağlanmıştır.
+- **Efficient Rendering:** State değişimleri ve bilet listelemeleri verimli bir şekilde yönetilir.
 
-### 4. SEO (Search Engine Optimization)
-- **Meta Tags:** Title, description, keywords
-- **Structured Data:** JSON-LD schema markup
-- **Semantic HTML:** Proper HTML5 semantic elements
-- **Alt Text:** Image alt attributes
-- **Sitemap:** XML sitemap generation
-- **Robots.txt:** Search engine crawling rules
+### 4. SEO ve Meta Yönetimi
+- **Semantic HTML:** Sayfalar `h1`, `section`, `header`, `footer` gibi anlamsal etiketlerle yapılandırılmıştır.
+- **Sayfa Başlıkları:** Farklı sayfalar için açıklayıcı başlıklar (Bilet Ara, Ödeme Yap, Profilim vb.) kullanılmıştır.
 
 ### 5. Erişilebilirlik (Accessibility)
-- **WCAG 2.1 AA Compliance:** Minimum accessibility standard
-- **Keyboard Navigation:** Tab order, focus management
-- **Screen Reader Support:** ARIA labels, roles, landmarks
-- **Color Contrast:** Minimum 4.5:1 ratio
-- **Focus Indicators:** Visible focus states
-- **Skip Links:** Skip to main content
+- **Keyboard Navigation:** Sayfa içerisindeki formlar ve butonlar `Tab` tuşu ile kontrol edilebilir.
+- **Aria Labels:** Görsel öğeler ve durumlar (loading states) için açıklayıcı etiketleme kuralları izlenmiştir.
 
-### 6. Browser Compatibility
-- **Modern Browsers:** Chrome, Firefox, Safari, Edge (son 2 versiyon)
-- **Polyfills:** ES6+ features için gerekli polyfills
-- **CSS Prefixes:** Autoprefixer kullanımı
-- **Feature Detection:** Modernizr veya native feature detection
-- **Graceful Degradation:** Eski tarayıcılar için fallback
+### 6. State Management
+- **Local State:** Form verileri ve geçici seçimler için `useState` ve `useReducer` kullanılmaktadır.
+- **Effect Management:** API çağrıları ve zamanlayıcı (Timer) işlemleri için `useEffect` tercih edilmiştir.
+- **Global Auth:** Kullanıcı oturum durumu ve sepet yönetimi `localStorage` üzerinden senkronize edilmektedir.
 
-### 7. State Management
-- **Global State:** Redux, Zustand, Context API (React), Vuex/Pinia (Vue)
-- **Local State:** Component state, hooks
-- **Server State:** React Query, SWR, Apollo Client
-- **Form State:** React Hook Form, Formik, React Final Form
+### 7. Routing (Yönlendirme)
+- **React Router:** Sayfalar arası geçişler için `react-router-dom` (Version 7) kütüphanesi kullanılmaktadır.
+- **Protected Routes:** Admin paneli ve bilet detayları gibi alanlar için yetkilendirme kontrolleri sayfa bazlı uygulanmaktadır.
 
-### 8. Routing
-- **Client-Side Routing:** React Router, Vue Router, Angular Router
-- **Deep Linking:** URL-based navigation
-- **Protected Routes:** Authentication guards
-- **404 Handling:** Custom 404 page
-- **History Management:** Browser history API
+### 8. API Entegrasyonu
+- **Native Fetch API:** HTTP istekleri için ek bir kütüphane yerine tarayıcı tabanlı `fetch` API kullanılarak bundle boyutu optimize edilmiştir.
+- **Request/Response Handling:** Hata yönetimi (error handling) ve yükleme durumu (loading status) her istek için özel olarak yönetilmiştir.
 
-### 9. API Entegrasyonu
-- **HTTP Client:** Axios, Fetch API, ky
-- **Request Interceptors:** Token injection, error handling
-- **Response Interceptors:** Error handling, token refresh
-- **Error Handling:** Centralized error handling
-- **Loading States:** Global loading indicator
-
-### 10. Testing
-- **Unit Tests:** Jest, Vitest, Mocha
-- **Integration Tests:** React Testing Library, Vue Test Utils
-- **E2E Tests:** Cypress, Playwright, Selenium
-- **Visual Regression:** Percy, Chromatic
-- **Accessibility Tests:** axe-core, Lighthouse
-
-### 11. Build ve Deployment
-- **Build Tool:** Webpack, Vite, Parcel, esbuild
-- **Module Bundler:** ES modules, CommonJS
-- **Environment Variables:** .env files
-- **CI/CD:** GitHub Actions, GitLab CI, Jenkins
-- **Hosting:** Vercel, Netlify, AWS, Azure
+### 9. Build ve Deployment
+- **Build Tool:** Vite üzerinden optimize edilmiş üretim dosyaları (minified JS/CSS) oluşturulmaktadır.
+- **Hosting:** Uygulama **Vercel** üzerinde barındırılmaktadır ve GitHub üzerinden otomatik CI/CD süreçleri ile yayına alınmaktadır.
