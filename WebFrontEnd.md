@@ -9,7 +9,7 @@ Bu dokümanda, web uygulamasının kullanıcı arayüzü (UI) ve kullanıcı den
 ## Grup Üyelerinin Web Frontend Görevleri
 
 1. [Furkan Burak Öztürk'ün Web Frontend Görevleri](Furkan-Burak-Öztürk/Furkan-Burak-Öztürk-Web-Frontend-Gorevleri.md)
-2. [Ömer Arı'nın Web Frontend Görevleri](Ömer-Arı/Ömer-Arı-Frontend-Gorevleri.md)
+2. [Ömer Arı'nın Web Frontend Görevleri](Ömer-Arı/Ömer-Arı-Web-Frontend-Gorevleri.md)
 
 ---
 
