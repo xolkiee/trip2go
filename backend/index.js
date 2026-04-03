@@ -8,9 +8,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+const DB_URI = process.env.MONGO_URI;
+
+if (!DB_URI) {
+  console.error("KRİTİK HATA: MONGO_URI çevresel değişkeni (Environment Variable) bulunamadı! Lütfen Vercel panelinden veya .env dosyasından tanımlayın.");
+}
+
+mongoose.connect(DB_URI || '', {
+  serverSelectionTimeoutMS: 5000 // 5 saniye içinde bağlanamazsa bekleme, hemen hata fırlat
+})
   .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
-  .catch((err) => console.error('MongoDB bağlantı hatası:', err));
+  .catch((err) => console.error('MongoDB BAĞLANTI HATASI (IP adresi veya URI hatalı olabilir):', err.message));
 
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
