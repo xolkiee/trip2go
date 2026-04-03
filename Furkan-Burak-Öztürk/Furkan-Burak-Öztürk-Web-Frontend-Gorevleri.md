@@ -2,110 +2,80 @@
 
 **Front-end Test Videosu:** [Link buraya eklenecek](https://example.com)
 
-## 1. Sefer Detay Sayfası
-- **API Endpoint:** `POST /api/reservations`
-- **Görev:** Kullanıcının seçtiği seferin koltuk düzenini görüntülemesi ve istediği koltuğu geçici olarak rezerve etmesi işlemleri.
+## 1. Sefer Detay Sayfası (`TripDetails.jsx`)
+- **API Endpoint:** `POST /api/reservations`, `GET /api/trips/{id}/details`
+- **Görev:** Kullanıcının seçtiği seferin interaktif koltuk şemasını görüntülemesi ve koltuk seçerek 10 dakikalık geçici rezervasyon (kilit) oluşturması.
 - **UI Bileşenleri:**
-  - Responsive otobüs/uçak oturma düzeni gridi.
-  - Koltuk durum göstergeleri (Boş, Dolu, Seçili, Rezerve).
-  - Cinsiyet seçim modalı (Erkek/Kadın seçimi).
-  - "Sefer Özeti" kartı (Fiyat ve koltuk bilgileri).
+  - Responsive araç (otobüs/uçak) koltuk gridi.
+  - Dinamik koltuk durumları (Boş, Dolu, Seçili, Rezerve).
+  - Cinsiyet seçim modalı (Mavi/Pembe renk kodlaması).
+  - Canlı sepet özeti ve fiyat hesaplama kartı.
   - "Ödemeye İlerle" aksiyon butonu.
 - **Form Validasyonu:**
-  - En fazla 5 koltuk seçimi sınırı.
-  - Cinsiyet seçilmeden koltuk ekleme engeli.
-  - Oturum açmamış kullanıcıların giriş sayfasına yönlendirilmesi.
-- **Kullanıcı Deneyimi:**
-  - Koltuk tıklandığında anlık görsel geri bildirim.
-  - Seçilen koltukların özet panelinde dinamik olarak listelenmesi.
-  - Rezervasyon işlemi sırasında loading spinner gösterimi.
+  - Tek seferde en fazla **5 koltuk** seçimi sınırı.
+  - Cinsiyet seçimi yapılmadan koltuk eklenememesi.
+  - Admin hesaplarının bilet alımının engellenmesi.
 - **Teknik Detaylar:**
-  - React State Management ile koltuk seçim takibi.
-  - POST isteği ile rezervasyonun backend tarafında kilitlenmesi.
+  - `selectedSeats` state'i ile çoklu seçim yönetimi.
+  - Token kontrolü ile misafir kullanıcıların `/login` sayfasına yönlendirilmesi.
 
-## 2. Güvenli Ödeme (Checkout) Sayfası
+## 2. Güvenli Ödeme (Checkout) Sayfası (`Checkout.jsx`)
 - **API Endpoint:** `POST /api/tickets`, `DELETE /api/reservations/{id}`
-- **Görev:** Rezerve edilen koltuklar için yolcu bilgilerinin alınması, ödemenin yapılması ve rezervasyonun iptal edilebilmesi süreci.
+- **Görev:** Rezerve edilen koltuklar için yolcu bilgilerinin toplanması, kredi kartı simülasyonu ve ödemenin tamamlanması.
 - **UI Bileşenleri:**
-  - 10 dakikalık işlem zamanlayıcısı (Countdown Timer).
-  - Kişi başı ayrı yolcu bilgi formu (Ad, Soyad, TCKN, İletişim).
-  - Kredi kartı giriş alanı (Kart No, SKT, CVV).
-  - "Ödemeyi Tamamla" ve "İptal Et ve Geri Dön" butonları.
+  - **10 Dakikalık Geri Sayım Sayacı (Timer):** Süre bitince işlemi durdurma.
+  - Dinamik yolcu formları (Seçilen koltuk sayısı kadar form render edilir).
+  - Kart numarası ve telefon numarası için giriş maskeleri (Input masking).
+  - "Ödemeyi Tamamla" ve "İptal Et / Geri Dön" butonları.
 - **Form Validasyonu:**
-  - TCKN 11 hane sayısal kontrolü.
-  - Telefon numarası format doğrulaması.
-  - Kart numarası 16 hane maskeleme ve kontrolü.
-- **Kullanıcı Deneyimi:**
-  - Kart numarası girilirken otomatik formatlama (Masking).
-  - Zamanlayıcı bitiminde bilet alımının durdurulması ve uyarı mesajı.
-  - İptal butonuna basıldığında koltukların boşa çıkartılması ve geri yönlendirme.
+  - TCKN alanı için **11 hane** ve sayısal kontrolü.
+  - Telefon numarası için karakter uzunluğu ve format kontrolü (05xx...).
+  - Kredi kartı için **16 hane** ve son kullanma tarihi geçerlilik kontrolü.
 - **Teknik Detaylar:**
-  - Multi-passenger form state yönetimi.
-  - Interval ile geri sayım mekanizması.
-  - API POST ve DELETE entegrasyonu.
+  - `setInterval` ile senkronize çalışan countdown mekanizması.
+  - Rezervasyonun kullanıcı tarafından manuel iptali (DELETE).
 
-## 3. Seyahatlerim Sayfası
+## 3. Seyahatlerim Sayfası (`MyTrips.jsx`)
 - **API Endpoint:** `DELETE /api/tickets/{id}`, `PUT /api/tickets/{id}/passenger`
-- **Görev:** Kullanıcının satın aldığı biletleri listelemesi, yolcu bilgilerini güncellemesi ve biletini iptal etmesi işlemleri.
+- **Görev:** Kullanıcının satın aldığı aktif ve geçmiş biletlerini listelediği, biletlerini yönetebildiği panel.
 - **UI Bileşenleri:**
-  - Aktif ve geçmiş bilet kartları (Rota, Saat, QR Kod).
-  - "Bileti İptal Et" butonu (Confirm dialoglu).
-  - "Bilgileri Güncelle" formu (TCKN/İsim düzenleme).
-- **Form Validasyonu:**
-  - Yolcu bilgisi güncellemede boş alan ve format kontrolü.
-- **Kullanıcı Deneyimi:**
-  - Biletlerin durumuna göre (iptal, onaylı, geçti) görsel ayırt edicilik.
-  - İptal sonrası listenin anlık güncellenmesi.
-  - Veri yüklenirken skeleton loader kullanımı.
+  - Bilet kartları (Firma logosu, Rota, Şehirler, Kalkış Saati).
+  - Durum etiketleri (Sefer Bekleniyor, Tamamlandı, İptal Edildi).
+  - Satır içi (Inline) yolcu bilgisi güncelleme formu.
+  - "Bileti İptal Et" onay penceresi (Confirm dialog).
 - **Teknik Detaylar:**
-  - DELETE /api/tickets ve PUT /api/tickets/{id}/passenger entegrasyonu.
-  - Client-side data filtering (Gelecek/Geçmiş seyahat ayrımı).
+  - Tarih bazlı veri filtreleme (Gelecek ve Geçmiş seyahat ayrımı).
+  - `fetchTickets` ile bilet listesinin asenkron yüklenmesi ve yenilenmesi.
 
-## 4. Profil Ayarları Sayfası
+## 4. Profil Ayarları Sayfası (`Profile.jsx`)
 - **API Endpoint:** `GET /api/users/profile`, `PUT /api/users/profile`, `DELETE /api/users/profile`
-- **Görev:** Kullanıcının kişisel bilgilerini yönetmesi, güncellemesi ve hesabını tamamen silmesi süreci.
+- **Görev:** Kullanıcının kişisel bilgilerini yönetmesi, şifresini değiştirmesi ve hesabını tamamen silmesi.
 - **UI Bileşenleri:**
-  - Profil bilgi kartı (Avatar ve temel bilgiler).
-  - Düzenleme formu (Ad, Soyad, Telefon).
-  - "Hesabımı Kalıcı Olarak Sil" butonu.
-- **Form Validasyonu:**
-  - Telefon format maskesi ve zorunlu alan kontrolü.
-- **Kullanıcı Deneyimi:**
-  - Başarılı güncelleme sonrası toast mesajı.
-  - Hesap silme öncesi çift onay penceresi.
-  - Silme sonrası otomatik logout ve redirect.
+  - Profil Bilgileri Formu (Ad, Soyad, Email, Telefon).
+  - Şifre güncelleme alanı.
+  - "Hesabımı Kalıcı Olarak Sil" butonu ve kritik işlem uyarı kutusu (Danger zone).
 - **Teknik Detaylar:**
-  - AuthContext üzerindeki kullanıcı verisinin senkronizasyonu.
-  - API PUT ve DELETE istekleri.
-  - LocalStorage / Token temizliği.
+  - `localStorage` üzerindeki kullanıcı verisinin her güncelleme sonrası yeni token ile senkronize edilmesi.
+  - Hesap silme esnasında aktif biletlerin kontrolü ve kullanıcıya uyarı gösterimi.
 
-## 5. Admin - Yeni Sefer Ekleme Sayfası
-- **API Endpoint:** `POST /api/admin/trips`
-- **Görev:** Yetkili adminlerin platforma yeni otobüs veya uçak seferi tanımlaması için kullanılan arayüz.
+## 5. Admin - Yeni Sefer Ekleme Sayfası (`AdminTripCreate.jsx`)
+- **API Endpoint:** `POST /api/admin/trips`, `GET /api/locations`
+- **Görev:** Adminlerin sisteme yeni otobüs veya uçak seferi tanımlaması.
 - **UI Bileşenleri:**
-  - Searchable dropdownlar (Kalkış-Varış lokasyon seçimi).
-  - Tarih, Saat ve Varış Zamanı seçiciler.
-  - Araç türü ve koltuk düzeni (2+1 / 2+2) ayarları.
-  - Fiyat inputu ve "Sefer Oluştur" butonu.
-- **Form Validasyonu:**
-  - Geçmiş tarihli sefer girişinin engellenmesi.
-  - Kalkış ve varışın aynı yer olamaması.
-- **Kullanıcı Deneyimi:**
-  - Şehir arama özelliği ile hızlı seçim.
-  - Başarılı ekleme sonrası formun sıfırlanması ve başarı bildirimi.
+  - `SearchableSelect`: Otomatik tamamlamalı şehir/havalimanı arama kutuları.
+  - Tarih ve Saat seçiciler.
+  - Fiyat ve araç kapasitesi giriş alanları.
+  - Sefer Listesi Tablosu: Eklenen tüm seferlerin dökümü.
 - **Teknik Detaylar:**
-  - Admin yetki doğrulaması (Protected routes).
-  - ISO string tarih dönüşümleri.
+  - Admin login token'ı ile yetkilendirilmiş istekler.
+  - Başarılı ekleme sonrası formun temizlenmesi ve listenin anlık güncellenmesi.
 
-## 6. Admin - Sefer Düzenleme Sayfası
+## 6. Admin - Sefer Düzenleme ve Silme (`AdminTripUpdate.jsx` & `AdminTripCreate.jsx`)
 - **API Endpoint:** `PUT /api/admin/trips/{id}`, `DELETE /api/admin/trips/{id}`
-- **Görev:** Mevcut bir seferin bilgilerinin güncellenmesi veya seferin tamamen silinmesi.
+- **Görev:** Mevcut bir seferin bilgilerinin güncellenmesi veya yayından kaldırılması.
 - **UI Bileşenleri:**
-  - Mevcut verilerle önceden doldurulmuş düzenleme formu.
-  - "Değişiklikleri Kaydet" ve "Seferi Sil" butonları.
-- **Kullanıcı Deneyimi:**
-  - Verilerin formda hazır gelmesi sayesinde hızlı düzenleme.
-  - Sefer silme öncesi kritik işlem uyarısı.
+  - Mevcut verilerle ön-doldurulmuş (Pre-filled) düzenleme formu.
+  - Sefer Listesi Tablosu içindeki "Sil" ve "Düzenle" butonları.
 - **Teknik Detaylar:**
-  - URL'den ID parametresi yakalama (GET + PUT/DELETE akışı).
-  - Form dirty state takibi.
+  - URL'den ID yakalama (Params) ve o sefere özgü veriyi çekme.
+  - `DELETE` isteği ile seferin tamamen veritabanından kaldırılması.
