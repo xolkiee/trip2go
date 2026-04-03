@@ -1,88 +1,57 @@
 # Ömer Arı'nın Web Frontend Görevleri
+
 **Front-end Test Videosu:** [Link buraya eklenecek](https://example.com)
 
-## 1. Ana Sayfa ve Sefer Arama
-- **API Endpoint:** `GET /api/locations`, `GET /api/trips/search`
-- **Görev:** Kullanıcının şehir veya havalimanı seçerek istediği tarihteki otobüs/uçak seferlerini aradığı ve listeleyebildiği arayüzün tasarımı.
-- **UI Bileşenleri:**
-  - Kalkış ve varış noktaları için otomatik tamamlamalı (autocomplete) arama kutuları.
-  - Sefer tarihi için interaktif DatePicker (Takvim).
-  - "Otobüs" ve "Uçak" sekmeleri (Tab menu).
-  - "Seferleri Bul" aksiyon butonu.
-  - Arama sonuçlarını listeleyen yatay sefer kartları (Firma logoları, kalkış/varış saatleri, yol süresi, fiyat).
-- **Form Validasyonu:**
-  - Kalkış ve varış noktalarının birbiriyle aynı seçilememesi.
-  - Geçmiş tarihli arama yapılmasının sistem tarafından engellenmesi.
-  - Lokasyonlar ve tarih girilmeden arama butonunun inaktif (disabled) olması.
-- **Kullanıcı Deneyimi:**
-  - Şehir ararken hızlı filtreleme ve liste yüklenirken "Yükleniyor..." gösterimleri.
-  - Aranan kriterde sefer bulunamazsa tasarımsal olarak zengin bir "Sefer Bulunamadı (Empty State)" ekranı.
-  - Yükleme sırasında skeleton animasyonlarının kullanımı.
-- **Teknik Detaylar:**
-  - Anasayfa yüklendiğinde `/api/locations` endpoint'i üzerinden illerin ve durakların çekilip state'e aktarılması.
-  - Kullanıcı filtreleri ile query parametreleri oluşturulup `/api/trips/search` isteğinin atılması.
-
-## 2. Kimlik Doğrulama: Giriş Yap ve Kayıt Ol Sayfaları
+## 1. Kimlik Doğrulama: Giriş Yap ve Kayıt Ol (`Auth.jsx`)
 - **API Endpoint:** `POST /api/auth/login`, `POST /api/auth/register`
-- **Görev:** Kullanıcıların yeni hesap oluşturabildiği ve sisteme giriş yapabildiği güvenli Auth formları.
-- **UI Bileşenleri:**
-  - İç içe veya ayrı sayfalarda iki temel form (Login / Register).
-  - Email ve Şifre inputları, ayrıca Kayıt Olma bölümünde Ad ve Soyad inputları.
-  - Şifre görünürlüğünü aç/kapat butonu (Göz ikonu).
-  - Formun altında "Hesabın yok mu? Kayıt Ol" veya "Şifremi Unuttum" yönlendirme linkleri.
-  - Loading spinner içeren primary gönderim butonları.
-- **Form Validasyonu:**
-  - Email girdi formatının standartlara (Regex) uygunluğu kontrolü.
-  - Şifrenin en az belli bir uzunlukta olması kuralı.
-  - Boş bırakılan alanlarda canlı (real-time) hataların gösterilmesi.
-- **Kullanıcı Deneyimi:**
-  - Hatalı şifre veya kayıt durumlarında formda sarsılma efekti (shake) veya input altında kırmızı, okunaklı "Geçersiz E-posta" mesajları.
-  - Başarılı kayıttan sonra kullanıcının pürüzsüzce "Giriş Yap" ekranına geçirilmesi veya anasayfaya otomatize yönlendirilmesi.
+- **Görev:** Kullanıcıların sisteme güvenli bir şekilde dahil olmasını ve oturum açmasını sağlayan merkezi kimlik doğrulama bileşeni.
+- **UI Özellikleri:**
+  - Login ve Register arasında pürüzsüz geçiş sağlayan Tab yapısı.
+  - Hata mesajları için dinamik Alert kutuları.
+  - Yükleme sırasında butona eklenen "Lütfen Bekleyin..." durum göstergesi (Loading state).
+- **Validasyon Kuralları:**
+  - **E-Posta Kontrolü:** Sadece `.com` uzantılı e-posta adreslerine izin veren Regex kontrolü.
+  - Zorunlu alanların (Ad, Soyad, Email, Şifre) boş bırakılamaması.
 - **Teknik Detaylar:**
-  - Giriş sonrası dönen JWT Token'in `localStorage` içerisine kaydedilmesi.
-  - React.Context yapısıyla Global state üzerinde kullanıcının `isLoggedIn = true` yapılması ve header güncellemeleri.
+  - Başarılı giriş sonrası `localStorage` üzerine `trip2go_token` ve `trip2go_user` verilerinin kaydedilmesi.
+  - Kullanıcı rolüne göre (User/Admin) farklı sayfalara (`/trips` veya `/admin/trips/new`) otomatik yönlendirme.
 
-## 3. Şifremi Unuttum ve Sıfırlama Sayfaları
+## 2. Yönetici Kimlik Doğrulama (`AdminAuth.jsx`)
+- **API Endpoint:** `POST /api/auth/login`, `POST /api/auth/admin-register`
+- **Görev:** Otobüs ve Uçak firması yetkililerinin sisteme kayıt olup yönetici paneline erişmesini sağlayan özel yetkilendirme sayfası.
+- **UI Özellikleri:**
+  - Firma tipi seçimi (Otobüs/Uçak) için özel Select kutusu.
+  - "Firma Kayıt Anahtarı" (Secret Key) giriş alanı.
+- **Validasyon ve Güvenlik:**
+  - `trip2go-admin` gizli anahtarı olmadan yönetici kaydı yapılamaması.
+  - Sadece Admin rolüne sahip kullanıcıların bu panel üzerinden giriş yapabilmesi.
+
+## 3. Gelişmiş Sefer Arama Arayüzü (`Trips.jsx`)
+- **API Endpoint:** `GET /api/locations`, `GET /api/trips/search`
+- **Görev:** Kullanıcının binlerce lokasyon arasından seçim yaparak kriterlerine uygun seferleri filtrelediği ana arama motoru.
+- **UI Özellikleri:**
+  - **SearchableSelect Bileşeni:** Yazılan harfe göre anlık filtreleme yapan (Autocomplete) ve Türkçe karakter (İ-i, I-ı) duyarlı akıllı seçim kutusu.
+  - **Hero Bölümü:** Otobüs ve Uçak sekmeleriyle ayrılmış, kalkış/varış yer değiştirme (Switch) butonuna sahip yatay arama çubuğu.
+  - **Sefer Kartları:** Firma adı, puanı (rating), kalkış/varış saati, kalan koltuk sayısı ve dinamik fiyat bilgisini içeren interaktif kartlar.
+- **Teknik Detaylar:**
+  - `sessionStorage` kullanımı: Kullanıcının arama kriterlerini (Nereden, Nereye, Tarih, Tip) tarayıcı hafızasında tutarak sayfa yenilense bile verilerin korunması.
+  - Tip (Bus/Flight) değişiminde lokasyonların otomatik filtrelenmesi (Şehirler vs Havalimanları).
+
+## 4. Şifremi Unuttum Süreci (`ForgotPassword.jsx`)
 - **API Endpoint:** `POST /api/auth/forgot-password`, `PUT /api/auth/reset-password`
-- **Görev:** Şifresini unutan kullanıcılar için güvenli şifre sıfırlama akışının 2 sayfalı ekran serüveni.
-- **UI Bileşenleri:**
-  - "Şifremi Unuttum" ilk aşama formu (Sadece e-posta istenir).
-  - "Yeni Şifrenizi Belirleyin" ekranı (Yeni şifre ve şifre onayı inputları).
-- **Form Validasyonu:**
-  - Yeni girilen ve tekrar girilen şifrenin birebir aynı olması gerektiği eşleşme kontrolü.
-- **Kullanıcı Deneyimi:**
-  - Mail başarıyla atıldığında "Mail kutunuzu kontrol edin" diyerek sürecin yeşil bildirim ile sonlandırılması.
-  - Şifre sıfırlama linki geçersizse arayüzde bir uyarı verilip, başa (şifremi unuttum ekranı) döndürme butonu çıkarılması.
+- **Görev:** Şifresini hatırlamayan kullanıcılar için e-posta tabanlı güvenli yenileme akışı.
+- **UI Özellikleri:**
+  - Adım adım ilerleyen (Step-by-step) form yapısı.
+  - Yeni şifre ve şifre onay alanları.
 - **Teknik Detaylar:**
-  - Backend'in kabul edeceği Reset JWT Token'ının url routing üzerinden (örn: `/reset-password/:token`) alınıp PUT isteğine bağlanması.
+  - URL'den yakalanan token bilgisi ile `PUT` isteği üzerinden şifrenin kalıcı olarak güncellenmesi.
 
-## 4. Sefer İnceleme ve Yorumlar Alanı
-- **API Endpoint:** `GET /api/trips/{id}/details`, `GET /api/reviews/trip/{id}`
-- **Görev:** Kullanıcının ilgilendiği seferi özel olarak incelemesi ve diğer yolcuların yaptığı firma değerlendirmelerini listeleyebilmesi.
-- **UI Bileşenleri:**
-  - Seferin taşıt detayı bilgileri (Koltuk haritası getirme kısmı).
-  - Firmanın genel puanını gösteren özet bir yıldız reytingi tablosu (Örn: 4.8 / 5 Yıldız).
-  - Scroll edilebilir kullanıcı yorumları arayüzü (İsim maskeleme: Y*** S***, Tarih ve Yorum metni).
-- **Kullanıcı Deneyimi:**
-  - Yorum alanında "Bu firma/sefer için ilk yorumu sen yap!" gibi boş durum (empty state) yönlendirmeleri.
-  - Uzun yorumlar için "...daha fazla oku" genişletilebilir açılır metin deneyimi.
+## 5. Firma Değerlendirme ve Yorum Listesi (`TripDetails.jsx` & `MyTrips.jsx`)
+- **API Endpoint:** `GET /api/reviews/trip/{id}`, `POST /api/reviews`
+- **Görev:** Yolcuların deneyimlerini paylaştığı ve diğer kullanıcıların bu yorumları gördüğü sosyal katman.
+- **UI Özellikleri:**
+  - **Review Card:** Maskelenmiş kullanıcı adı (Örn: Ö*** A***), yıldız puanlama (Star rating) ve yorum metni.
+  - **Rating Summary:** Sefer arama sonuçlarında görünen ortalama puan ve toplam yorum sayısı özeti.
 - **Teknik Detaylar:**
-  - Sayfa mount edildiğinde asenkron olarak hem detay hem de o sefere ait spesifik yorumların `/api/reviews/trip/{id}` isteğiyle sayfa state'inde birleştirilmesi.
-
-## 5. Kullanıcının Yorum Yönetmesi (Ekle/Düzenle/Sil)
-- **API Endpoint:** `POST /api/reviews`, `PUT /api/reviews/{id}`, `DELETE /api/reviews/{id}`
-- **Görev:** Bilet aldığı sefer için yorum yazmak isteyen, yazdığı yorumu düzenlemek ya da sistemden tamamen kaldırmak isteyen yolcu için form alanları.
-- **UI Bileşenleri:**
-  - Değerlendirme eklemek veya düzenlemek için ayrılmış bir Modal veya Genişleyebilir (Accordion) div.
-  - Mouse ile hoverlandığında altın sarısı rengine bürünen 1-5 arası interaktif yıldızlar.
-  - Yorum metni için `textarea`.
-  - İşlem butonları ("Gönder", "Değişiklikleri Kaydet", "Yorumumu Sil").
-- **Form Validasyonu:**
-  - Yıldız puanı verilmeden yorum göndermeye izin verilmemesi (Disable button).
-  - Herhangi bir değişiklik yapılmadıysa "Kaydet" butonunun pasif bekletilmesi.
-- **Kullanıcı Deneyimi:**
-  - Kendi yorumunu silmek istediğinde, "Bu yorumu kalıcı olarak silmek istediğinize emin misiniz?" güvenlik zırhı (Confirm).
-  - Yorum onaylandığında "Değerlendirmeniz alındı" uyarısı (Toast) gösterimi ve modalın kendiliğinden kaybolması.
-- **Teknik Detaylar:**
-  - Token tabanlı Bearer yetkilendirmesi ile işlem yapılması.
-  - Düzenleme yapılıyorsa `PUT`, siliniyorsa `DELETE` endpoint'lerine dinamik method akışı ve istek sonrasında listenin fetch ya da client bazlı yenilenmesi (Optimistic Update).
+  - Kullanıcı adlarının gizlilik gereği (KVKK) backend'den maskelenmiş (`maskedUser`) olarak çekilip gösterilmesi.
+  - `TripDetails` sayfasında seçilen sefere ait tüm geçmiş yorumların scroll edilebilir alanda listelenmesi.
