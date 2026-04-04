@@ -15,10 +15,11 @@ if (!DB_URI) {
 }
 
 mongoose.connect(DB_URI || '', {
-  serverSelectionTimeoutMS: 5000, // MongoDB Atlas'a 5sn içinde bağlanamazsa hata fırlat
-  connectTimeoutMS: 10000,        // İlk bağlantı kurulma süresi 10sn limit
-  socketTimeoutMS: 45000,         // Boştaki soketlerin bekleme süresi
-  bufferCommands: false           // Veritabanı bağlı değilse komutları kuyruğa alma (Hızlı hata için)
+  serverSelectionTimeoutMS: 5000, 
+  connectTimeoutMS: 10000,        
+  socketTimeoutMS: 45000
+  // bufferCommands: true (Varsayılan): Bağlantı hazır olana kadar sorguları bekletir. 
+  // Vercel gibi ortamlarda ilk açılışta çökmesini önler.
 })
   .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
   .catch((err) => {
