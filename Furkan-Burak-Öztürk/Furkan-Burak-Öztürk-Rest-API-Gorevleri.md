@@ -1,6 +1,6 @@
 # Furkan Burak Öztürk'ün REST API Metotları
 
-**API Test Videosu:** [Link buraya eklenecek](https://example.com)
+**API Test Videosu:** [Youtube Linki](https://www.youtube.com/watch?v=j-9eUAhBVro)
 
 ## 1. Koltuk Rezerve Etme
 - **Endpoint:** `POST /api/reservations`

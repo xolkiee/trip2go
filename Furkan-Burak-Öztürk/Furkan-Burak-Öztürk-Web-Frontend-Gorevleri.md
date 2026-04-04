@@ -1,6 +1,6 @@
 # Furkan Burak Öztürk'ün Web Frontend Görevleri
 
-**Front-end Test Videosu:** [Link buraya eklenecek](https://example.com)
+**Front-end Test Videosu:** [Youtube Linki](https://www.youtube.com/watch?v=CFjZJjfUXH4)
 
 ## 1. Sefer Detay Sayfası (`TripDetails.jsx`)
 - **API Endpoint:** `POST /api/reservations`, `GET /api/trips/{id}/details`
