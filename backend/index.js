@@ -15,10 +15,16 @@ if (!DB_URI) {
 }
 
 mongoose.connect(DB_URI || '', {
-  serverSelectionTimeoutMS: 5000 // 5 saniye içinde bağlanamazsa bekleme, hemen hata fırlat
+  serverSelectionTimeoutMS: 5000, // MongoDB Atlas'a 5sn içinde bağlanamazsa hata fırlat
+  connectTimeoutMS: 10000,        // İlk bağlantı kurulma süresi 10sn limit
+  socketTimeoutMS: 45000,         // Boştaki soketlerin bekleme süresi
+  bufferCommands: false           // Veritabanı bağlı değilse komutları kuyruğa alma (Hızlı hata için)
 })
   .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
-  .catch((err) => console.error('MongoDB BAĞLANTI HATASI (IP adresi veya URI hatalı olabilir):', err.message));
+  .catch((err) => {
+    console.error('MongoDB BAĞLANTI HATASI:', err.message);
+    // Vercel'de logları görmek için hatayı tekrar fırlatabilir veya özel bir hata döndürebiliriz
+  });
 
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');

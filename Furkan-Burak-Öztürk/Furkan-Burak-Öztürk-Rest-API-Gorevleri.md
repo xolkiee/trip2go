@@ -6,7 +6,7 @@
 - **Endpoint:** `POST /api/reservations`
 - **Request Body:** ```json
   {
-    "tripId": "65ab1234cdef5678",
+    "tripId": "69d118ddb6d94ef733b37ac3",
     "seats": [
       {
         "seatNumber": 14,
@@ -20,7 +20,7 @@
 
 ## 2. Rezervasyon İptali
 - **Endpoint:** `DELETE /api/reservations/{id}`
-- **Path Parameters:** - `id` (string, required) - Rezervasyon ID'si
+- **Path Parameters:** - `id` (string, required) - Rezervasyon ID'si (Örn: 65ab1234cdef567890abcdef)
 - **Authentication:** Bearer Token gerekli
 - **Response:** `200 OK` - Rezervasyon başarıyla iptal edildi, koltuklar boşa çıktı
 
@@ -28,7 +28,7 @@
 - **Endpoint:** `POST /api/tickets`
 - **Request Body:** ```json
   {
-    "tripId": "65ab1234cdef5678",
+    "tripId": "69d118ddb6d94ef733b37ac3",
     "passengers": [
       {
         "seatNumber": 14,
@@ -36,7 +36,7 @@
           "firstName": "Furkan Burak",
           "lastName": "Öztürk",
           "identityNumber": "12345678900",
-          "phone": "05554443322"
+          "contactPhone": "05554443322"
         },
         "gender": "erkek"
       }
@@ -45,6 +45,7 @@
   }
   ```
 - **Authentication:** Bearer Token gerekli
+- **Note:** Kredi kartı bilgileri yalnızca frontend'de doğrulanıp ödeme işlemcisinden (mock) geçtiği için backende güvenlik gereği gönderilmez.
 - **Response:** `201 Created` - Ödeme başarılı, biletler oluşturuldu
 
 ## 4. Bilet İptal Etme
@@ -61,7 +62,8 @@
     "passenger": {
       "firstName": "Furkan Yeni",
       "lastName": "Öztürk",
-      "identityNumber": "12345678900"
+      "identityNumber": "12345678900",
+      "contactPhone": "05554443321"
     }
   }
   ```
@@ -72,15 +74,15 @@
 - **Endpoint:** `POST /api/admin/trips`
 - **Request Body:** ```json
   {
-    "company": "Trip2Go Turizm",
+    "company": "Pamukkale Turizm",
     "type": "bus",
     "seatLayout": "2+1",
-    "departure": "Ankara",
-    "destination": "İstanbul",
-    "date": "2026-05-20",
+    "departure": "Isparta",
+    "destination": "Antalya",
+    "date": "2026-04-10",
     "time": "22:00",
-    "arrivalTime": "04:00",
-    "price": 600
+    "arrivalTime": "00:00",
+    "price": 250
   }
   ```
 - **Authentication:** Bearer Token gerekli (Sadece Admin yetkisi)
@@ -91,11 +93,12 @@
 - **Path Parameters:** - `id` (string, required) - Sefer ID'si
 - **Request Body:** ```json
   {
-    "departure": "Ankara Otogar",
-    "price": 650,
+    "departure": "Isparta",
+    "destination":"Antalya",
+    "price": 350,
     "date": "2026-05-20",
     "time": "22:30",
-    "arrivalTime": "04:30"
+    "arrivalTime": "00:30"
   }
   ```
 - **Authentication:** Bearer Token gerekli (Sadece Admin yetkisi)
@@ -113,7 +116,7 @@
     "firstName": "Furkan Burak",
     "lastName": "Öztürk",
     "phone": "05551112233",
-    "password": "newSecurePassword123"
+    "password": "12345"
   }
   ```
 - **Authentication:** Bearer Token gerekli

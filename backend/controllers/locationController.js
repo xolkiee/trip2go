@@ -60,54 +60,47 @@ const majorAirports = [
 
 const seedLocationsIfEmpty = async () => {
     try {
-        const count = await Location.countDocuments();
-        const airportsCount = await Location.countDocuments({ type: 'airport' });
+        // En hızlı kontrol: Veritabanında herhangi bir lokasyon var mı?
+        // Bu sorgu milisaniyeler sürer ve 10s timeout riskini ortadan kaldırır.
+        const exists = await Location.findOne().select('_id');
         
-        // Havalimanı sayısı eksikse veya hiç yoksa yeniden temizleyip seed(tohumla) işlemine gir
-        if(count === 0 || airportsCount < 54) {
-            console.log("Eski lokasyonlar temizleniyor...");
-            await Location.deleteMany({});
-            console.log("Lokasyonlar boşaltıldı, TurkiyeAPI üzerinden 81 İl, İlçeler ve Havalimanları çekiliyor...");
-            let seedData = [];
-            
-            // Önce havalimanlarını ekle
-            majorAirports.forEach(airport => {
-                seedData.push({ type: 'airport', name: airport.name, code: airport.code });
-            });
+        // Eğer veritabanında en az bir tane lokasyon varsa seed işlemine girme
+        if(exists) return;
 
-            // Sonra dışarıdan Türkiye İlleri ve İlçelerini çek (Node 18+ native fetch kullanılıyor)
-            try {
-                const res = await fetch('https://turkiyeapi.dev/api/v1/provinces');
-                if(res.ok) {
-                    const parsed = await res.json();
-                    parsed.data.forEach(province => {
-                        // Merkez İli ekle
-                        seedData.push({ type: 'city', name: province.name, code: province.id.toString() });
-                        
-                        // Tüm ilçeleri ekle (Örn: Aydın - Nazilli)
-                        if (province.districts && Array.isArray(province.districts)) {
-                            province.districts.forEach(district => {
-                                seedData.push({ 
-                                    type: 'city', 
-                                    name: `${province.name} - ${district.name}`, 
-                                    code: `${province.id}-${district.id}` 
-                                });
+        console.log("Veritabanı boş, lokasyonlar (Havalimanları ve İller) veritabanına ekleniyor...");
+        let seedData = [];
+        
+        // Havalimanlarını hazır listeden ekle
+        majorAirports.forEach(airport => {
+            seedData.push({ type: 'airport', name: airport.name, code: airport.code });
+        });
+
+        // TürkiyeAPI üzerinden 81 İl ve İlçeleri çek
+        try {
+            const res = await fetch('https://turkiyeapi.dev/api/v1/provinces');
+            if(res.ok) {
+                const parsed = await res.json();
+                parsed.data.forEach(province => {
+                    seedData.push({ type: 'city', name: province.name, code: province.id.toString() });
+                    if (province.districts && Array.isArray(province.districts)) {
+                        province.districts.forEach(district => {
+                            seedData.push({ 
+                                type: 'city', 
+                                name: `${province.name} - ${district.name}`, 
+                                code: `${province.id}-${district.id}` 
                             });
-                        }
-                    });
-                } else {
-                    console.log("Hata: TurkiyeAPI sunucusundan veriler çekilemedi.");
-                }
-            } catch (apiError) {
-                console.error("API'den lokasyon çekilirken hata:", apiError);
+                        });
+                    }
+                });
             }
-            
-            // Eğer çekilebildiyse veri tabanına push'la
-            if(seedData.length > 0) {
-                // Binlerce veriyi chunk (parça parça) da ekleyebiliriz ama veriler JSON olarak hafif
-                await Location.insertMany(seedData);
-                console.log(`${seedData.length} adet İl/İlçe ve Havalimanı başarıyla Mongoose üzerine eklendi!`);
-            }
+        } catch (apiError) {
+            console.error("Dış API'den lokasyon çekilirken hata (Havalimanları ile devam ediliyor):", apiError);
+        }
+        
+        if(seedData.length > 0) {
+            // Veri fazlalığı durumunda MongoDB Atlas'ı yormamak için toplu kayıt
+            await Location.insertMany(seedData);
+            console.log("Lokasyonlar başarıyla Mongoose üzerine eklendi!");
         }
     } catch(err) {
         console.error("Location seed hatası:", err);
