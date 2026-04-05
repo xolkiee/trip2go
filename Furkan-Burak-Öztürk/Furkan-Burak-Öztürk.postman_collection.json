@@ -1,0 +1,432 @@
+{
+  "info": {
+    "_postman_id": "16b6ba35-a1df-4afd-bec9-449a6aa756a0",
+    "name": "New Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "50521987",
+    "_collection_link": "https://go.postman.co/collection/50521987-16b6ba35-a1df-4afd-bec9-449a6aa756a0?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Kullanıcı Girişi Yapma",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"fbo@gmail.com\",\r\n    \"password\": \"12345\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/login",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Admin Girişi Yapma",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"thy@gmail.com\",\r\n    \"password\": \"123456\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/login",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "1. Koltuk Rezerve Etme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTIzNjI5OSwiZXhwIjoxNzc3ODI4Mjk5fQ.8eja1F_LlVZ4QV9HMFSHbYH34jaB63MI0_n591kzV5w",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tripId\": \"69cfe0ac0e18197ac5dd74bc\",\r\n    \"seats\": [\r\n      {\r\n        \"seatNumber\": 14,\r\n        \"gender\": \"erkek\"\r\n      }\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/reservations",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "reservations"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Rezervasyon İptali",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTIzNjI5OSwiZXhwIjoxNzc3ODI4Mjk5fQ.8eja1F_LlVZ4QV9HMFSHbYH34jaB63MI0_n591kzV5w",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/reservations/69cffa381f8a909cff1d5b28",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "reservations",
+            "69cffa381f8a909cff1d5b28"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Bilet Satın Alma",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTIzNjI5OSwiZXhwIjoxNzc3ODI4Mjk5fQ.8eja1F_LlVZ4QV9HMFSHbYH34jaB63MI0_n591kzV5w",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"tripId\": \"69cfe0ac0e18197ac5dd74bc\",\r\n    \"passengers\": [\r\n      {\r\n        \"seatNumber\": 14,\r\n        \"passengerInfo\": {\r\n          \"firstName\": \"Furkan Burak\",\r\n          \"lastName\": \"Öztürk\",\r\n          \"identityNumber\": \"12345678900\",\r\n          \"phone\": \"05554443322\"\r\n        },\r\n        \"gender\": \"erkek\"\r\n      }\r\n    ],\r\n    \"price\": 250\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/tickets",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "tickets"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Yolcu Bilgilerini Güncelleme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTMwODgxNSwiZXhwIjoxNzc3OTAwODE1fQ.dcPyAA-itgEnUhIDDoF593h-S05PmPYjkIkhPrZDf0E",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"passenger\": {\r\n      \"firstName\": \"Furkan Yeni\",\r\n      \"lastName\": \"Öztürk\",\r\n      \"identityNumber\": \"12345678900\",\r\n      \"contactPhone\": \"05554443321\"\r\n    }\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/tickets/69d11569b6d94ef733b3776a/passenger",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "tickets",
+            "69d11569b6d94ef733b3776a",
+            "passenger"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Bilet İptal Etme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTMwODgxNSwiZXhwIjoxNzc3OTAwODE1fQ.dcPyAA-itgEnUhIDDoF593h-S05PmPYjkIkhPrZDf0E",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/tickets/69d114adb6d94ef733b37687",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "tickets",
+            "69d114adb6d94ef733b37687"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Sisteme Yeni Sefer Ekleme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZDExNjlhYjZkOTRlZjczM2IzNzlhMiIsImVtYWlsIjoicGFtdWtrYWxlQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImNvbXBhbnlOYW1lIjoiUGFtdWtrYWxlIFR1cml6bSIsImNvbXBhbnlUeXBlIjoiYnVzIiwiaWF0IjoxNzc1MzEwNTM3LCJleHAiOjE3Nzc5MDI1Mzd9.e-rcAdDmugaaQK3f3sb-tQy3HghUgOU9Bd5rrliVCRc",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"company\": \"Pamukkale Turizm\",\r\n    \"type\": \"bus\",\r\n    \"seatLayout\": \"2+1\",\r\n    \"origin\": \"İstanbul\",\r\n    \"destination\": \"Ankara\",\r\n    \"date\": \"2026-04-10\",\r\n    \"time\": \"22:00\",\r\n    \"arrivalTime\": \"2026-05-21T04:00:00\",\r\n    \"price\": 250\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/admin/trips",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "trips"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Sefer Bilgisi Güncelleme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZDExNjlhYjZkOTRlZjczM2IzNzlhMiIsImVtYWlsIjoicGFtdWtrYWxlQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImNvbXBhbnlOYW1lIjoiUGFtdWtrYWxlIFR1cml6bSIsImNvbXBhbnlUeXBlIjoiYnVzIiwiaWF0IjoxNzc1MzEwOTUwLCJleHAiOjE3Nzc5MDI5NTB9.rFFc-9OHU4lzbRKlAC0cc34C9SQpalYXdFnQek4kDtc",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "  {\r\n    \"departure\": \"Isparta\",\r\n    \"destination\":\"Antalya\",\r\n    \"price\": 350,\r\n    \"date\": \"2026-05-20\",\r\n    \"time\": \"22:30\",\r\n    \"arrivalTime\": \"00:30\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/admin/trips/69d118ddb6d94ef733b37ac3",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "trips",
+            "69d118ddb6d94ef733b37ac3"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Profil Sekmesi",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "9. Profil Bilgilerini Güncelleme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YzgyMjA2ZjFjMWZkYTI1NzUxZWRhYiIsImVtYWlsIjoiZmJvQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiY29tcGFueU5hbWUiOiIiLCJjb21wYW55VHlwZSI6IiIsImlhdCI6MTc3NTMxMTUzMCwiZXhwIjoxNzc3OTAzNTMwfQ.GZQYj-5D6ChWO-1YezbdnbibCyRZfm-DLX00BjxJiPU",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"firstName\": \"Furkan Burak\",\r\n    \"lastName\": \"Öztürk\",\r\n    \"phone\": \"05551112233\",\r\n    \"password\": \"newSecurePassword123\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/users/profile",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "users",
+            "profile"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Hesap Silme",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZDEzNmYxMmY1OTQ2YzhmODU2OWRlOCIsImVtYWlsIjoidmVAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJjb21wYW55TmFtZSI6IiIsImNvbXBhbnlUeXBlIjoiIiwiaWF0IjoxNzc1MzE4Nzc1LCJleHAiOjE3Nzc5MTA3NzV9.fUQg4UZg442eYX4uUsSQ6cTTTGblhQUvSpTPJtpqzUo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/users/profile",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "users",
+            "profile"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
