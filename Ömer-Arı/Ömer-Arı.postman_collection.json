@@ -1,0 +1,289 @@
+{
+  "info": {
+    "_postman_id": "55cbd4e3-ac89-4b19-bb91-124e5696f83f",
+    "name": "New Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "50713888",
+    "_collection_link": "https://go.postman.co/collection/50713888-55cbd4e3-ac89-4b19-bb91-124e5696f83f?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1. Kullanıcı Kaydı",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"firstName\": \"Ömer\",\r\n    \"lastName\": \"Arı\",\r\n    \"email\": \"omer.ari@example.com\",\r\n    \"password\": \"strongPassword123!\"\r\n    }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/register",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Kullanıcı Girişi",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"omer.ari@example.com\",\r\n    \"password\": \"strongPassword123!\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/login",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Şifremi Unuttum",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"omer.ari@example.com\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/forgot-password",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "forgot-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3.1. Şifre Sıfırlama",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"token\": \"t0j2hlubrea\",\r\n    \"newPassword\": \"yeniGucluSifre123\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/auth/reset-password",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "reset-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Şehir/Havalimanı Listesi Getirme",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "5. Sefer Arama",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/trips/search?Origin=Isparta&Destination=Antalya&tripDate=2026-05-20&type=bus",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "trips",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "Origin",
+              "value": "Isparta",
+              "type": "text"
+            },
+            {
+              "key": "Destination",
+              "value": "Antalya",
+              "type": "text"
+            },
+            {
+              "key": "tripDate",
+              "value": "2026-05-20",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "bus",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Sefer Detayları ve Koltuk Haritası",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "7. Yorum ve Değerlendirme Ekleme",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"tripId\": \"69d118ddb6d94ef733b37ac3\",\r\n    \"userId\": \"69d129212f5946c8f8568d69\",\r\n    \"rating\": 5,\r\n    \"comment\": \"Konforlu bir yolculuktu, şoför bey çok beyefendiydi.\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/reviews",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "reviews"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Firma Yorumlarını Listeleme",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"tripId\": \"69d118ddb6d94ef733b37ac3\",\r\n    \"userId\": \"69d129212f5946c8f8568d69\",\r\n    \"rating\": 5,\r\n    \"comment\": \"Konforlu bir yolculuktu, şoför bey çok beyefendiydi.\"\r\n  }"
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/reviews/trip/69d118ddb6d94ef733b37ac3",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "reviews",
+            "trip",
+            "69d118ddb6d94ef733b37ac3"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Yorum Düzenleme",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "10. Yorum Silme",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"tripId\": \"69d118ddb6d94ef733b37ac3\",\r\n    \"userId\": \"69d129212f5946c8f8568d69\",\r\n    \"rating\": 5,\r\n    \"comment\": \"Konforlu bir yolculuktu, şoför bey çok beyefendiydi.\"\r\n  }"
+        },
+        "url": {
+          "raw": "https://trip2go-rho.vercel.app/api/reviews/69d12bd32f5946c8f8568f4f",
+          "protocol": "https",
+          "host": [
+            "trip2go-rho",
+            "vercel",
+            "app"
+          ],
+          "path": [
+            "api",
+            "reviews",
+            "69d12bd32f5946c8f8568f4f"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
