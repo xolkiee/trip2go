@@ -1,6 +1,6 @@
 # Ömer Arı'nın Web Frontend Görevleri
 
-**Front-end Test Videosu:** [Link buraya eklenecek](https://example.com)
+**Front-end Test Videosu:** [Youtube Linki](https://www.youtube.com/watch?v=6MhhoSNWSoE)
 
 ## 1. Kimlik Doğrulama: Giriş Yap ve Kayıt Ol (`Auth.jsx`)
 - **API Endpoint:** `POST /api/auth/login`, `POST /api/auth/register`

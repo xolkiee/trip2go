@@ -1,6 +1,6 @@
 # Ömer Arı'nın REST API Metotları
 
-**API Test Videosu:** [Link buraya eklenecek](https://example.com)
+**API Test Videosu:** [Youtube Linki](https://www.youtube.com/watch?v=G-mO9pfhUM4)
 
 ## 1. Kullanıcı Kaydı (Register)
 - **Endpoint:** `POST /api/auth/register`
