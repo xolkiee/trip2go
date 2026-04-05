@@ -77,7 +77,8 @@ const seedLocationsIfEmpty = async () => {
 
         // TürkiyeAPI üzerinden 81 İl ve İlçeleri çek
         try {
-            const res = await fetch('https://turkiyeapi.dev/api/v1/provinces');
+            // Yeni ve hızlı API adresini kullanıyoruz (Yönlendirmeden kurtulup 1-2 saniye kazanıyoruz)
+            const res = await fetch('https://api.turkiyeapi.dev/v1/provinces');
             if(res.ok) {
                 const parsed = await res.json();
                 parsed.data.forEach(province => {
