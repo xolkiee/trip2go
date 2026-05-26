@@ -1,4 +1,4 @@
-import MyTripsScreen from '../screens/MyTripsScreen';
+import MyTripsScreen from '../../screens/MyTripsScreen';
 
 export default function MyTrips() {
   return <MyTripsScreen />;
