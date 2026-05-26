@@ -100,14 +100,27 @@ const searchTrips = async (req, res) => {
     const Review = require('../models/Review');
     const uniqueAdmins = [...new Set(results.map(t => t.createdBy?.toString()).filter(Boolean))];
     const adminRatings = {};
-    for (const adminId of uniqueAdmins) {
-        const adminTrips = await Trip.find({ createdBy: adminId }).select('_id');
-        const adminTripIds = adminTrips.map(t => t._id);
-        const reviews = await Review.find({ tripId: { $in: adminTripIds } });
-        if (reviews.length > 0) {
-            const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-            adminRatings[adminId] = { avg: avg.toFixed(1), count: reviews.length };
-        }
+    if (uniqueAdmins.length > 0) {
+        // Şirket puanlarını toplu olarak çekiyoruz (N+1 Query problemini çözerek 10s timeout riskini azaltıyoruz)
+        const allAdminTrips = await Trip.find({ createdBy: { $in: uniqueAdmins } }).select('_id createdBy');
+        const adminTripIdsMap = {};
+        allAdminTrips.forEach(at => {
+            const cid = at.createdBy.toString();
+            if (!adminTripIdsMap[cid]) adminTripIdsMap[cid] = [];
+            adminTripIdsMap[cid].push(at._id.toString());
+        });
+        
+        const allRelevantTripIds = allAdminTrips.map(t => t._id);
+        const allReviews = await Review.find({ tripId: { $in: allRelevantTripIds } });
+        
+        uniqueAdmins.forEach(adminId => {
+            const adminTripIds = adminTripIdsMap[adminId] || [];
+            const reviews = allReviews.filter(r => adminTripIds.includes(r.tripId.toString()));
+            if (reviews.length > 0) {
+                const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+                adminRatings[adminId] = { avg: avg.toFixed(1), count: reviews.length };
+            }
+        });
     }
 
     const mappedResults = results.map(t => {

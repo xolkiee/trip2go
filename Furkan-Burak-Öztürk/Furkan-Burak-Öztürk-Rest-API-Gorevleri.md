@@ -1,51 +1,70 @@
 # Furkan Burak Öztürk'ün REST API Metotları
 
-**API Test Videosu:** [Link buraya eklenecek](https://example.com)
+**API Test Videosu:** [Youtube Linki](https://www.youtube.com/watch?v=j-9eUAhBVro)
 
 ## 1. Koltuk Rezerve Etme
 - **Endpoint:** `POST /api/reservations`
 - **Request Body:** ```json
   {
-    "tripId": "65ab1234cdef5678",
-    "seatNumber": "14A",
-    "passengerId": "65ab9876lkjh5432"
+    "tripId": "69d118ddb6d94ef733b37ac3",
+    "seats": [
+      {
+        "seatNumber": 14,
+        "gender": "erkek"
+      }
+    ]
   }
   ```
 - **Authentication:** Bearer Token gerekli
-- **Response:** `201 Created` - Koltuk başarıyla rezerve edildi
+- **Response:** `201 Created` - Koltuk 10 dakikalığına başarıyla rezerve edildi
 
 ## 2. Rezervasyon İptali
 - **Endpoint:** `DELETE /api/reservations/{id}`
-- **Path Parameters:** - `id` (string, required) - Rezervasyon ID'si
+- **Path Parameters:** - `id` (string, required) - Rezervasyon ID'si (Örn: 65ab1234cdef567890abcdef)
 - **Authentication:** Bearer Token gerekli
-- **Response:** `200 OK` - Rezervasyon başarıyla iptal edildi
+- **Response:** `200 OK` - Rezervasyon başarıyla iptal edildi, koltuklar boşa çıktı
 
 ## 3. Bilet Satın Alma
 - **Endpoint:** `POST /api/tickets`
 - **Request Body:** ```json
   {
-    "reservationId": "res_987654321",
-    "paymentMethod": "credit_card",
-    "amount": 450.00
+    "tripId": "69d118ddb6d94ef733b37ac3",
+    "passengers": [
+      {
+        "seatNumber": 14,
+        "passengerInfo": {
+          "firstName": "Furkan Burak",
+          "lastName": "Öztürk",
+          "identityNumber": "12345678900",
+          "contactPhone": "05554443322"
+        },
+        "gender": "erkek"
+      }
+    ],
+    "price": 450
   }
   ```
 - **Authentication:** Bearer Token gerekli
-- **Response:** `201 Created` - Bilet başarıyla oluşturuldu ve satın alındı
+- **Note:** Kredi kartı bilgileri yalnızca frontend'de doğrulanıp ödeme işlemcisinden (mock) geçtiği için backende güvenlik gereği gönderilmez.
+- **Response:** `201 Created` - Ödeme başarılı, biletler oluşturuldu
 
 ## 4. Bilet İptal Etme
 - **Endpoint:** `DELETE /api/tickets/{id}`
 - **Path Parameters:** - `id` (string, required) - Bilet ID'si
 - **Authentication:** Bearer Token gerekli
-- **Response:** `200 OK` - Bilet iptal edildi ve iade süreci başlatıldı
+- **Response:** `200 OK` - Bilet iptal edildi ve koltuk diğer yolcular için serbest bırakıldı
 
 ## 5. Yolcu Bilgilerini Güncelleme
 - **Endpoint:** `PUT /api/tickets/{id}/passenger`
 - **Path Parameters:** - `id` (string, required) - Bilet ID'si
 - **Request Body:** ```json
   {
-    "firstName": "Furkan Burak",
-    "lastName": "Öztürk",
-    "identityNumber": "12345678900"
+    "passenger": {
+      "firstName": "Furkan Yeni",
+      "lastName": "Öztürk",
+      "identityNumber": "12345678900",
+      "contactPhone": "05554443321"
+    }
   }
   ```
 - **Authentication:** Bearer Token gerekli
@@ -55,34 +74,40 @@
 - **Endpoint:** `POST /api/admin/trips`
 - **Request Body:** ```json
   {
+    "company": "Pamukkale Turizm",
     "type": "bus",
-    "departureLocation": "Ankara Otogar",
-    "arrivalLocation": "İzmir Otogar",
-    "departureTime": "2026-04-15T10:00:00Z",
-    "price": 450,
-    "capacity": 42
+    "seatLayout": "2+1",
+    "departure": "Isparta",
+    "destination": "Antalya",
+    "date": "2026-04-10",
+    "time": "22:00",
+    "arrivalTime": "00:00",
+    "price": 250
   }
   ```
 - **Authentication:** Bearer Token gerekli (Sadece Admin yetkisi)
-- **Response:** `201 Created` - Yeni sefer başarıyla eklendi
+- **Response:** `201 Created` - Yeni sefer ve koltuk şeması başarıyla oluşturuldu
 
 ## 7. Sefer Bilgisini Güncelleme (Admin)
 - **Endpoint:** `PUT /api/admin/trips/{id}`
 - **Path Parameters:** - `id` (string, required) - Sefer ID'si
 - **Request Body:** ```json
   {
-    "price": 500,
-    "departureTime": "2026-04-15T11:30:00Z",
-    "status": "delayed"
+    "departure": "Isparta",
+    "destination":"Antalya",
+    "price": 350,
+    "date": "2026-05-20",
+    "time": "22:30",
+    "arrivalTime": "00:30"
   }
   ```
 - **Authentication:** Bearer Token gerekli (Sadece Admin yetkisi)
-- **Response:** `200 OK` - Sefer bilgileri güncellendi
+- **Response:** `200 OK` - Sefer bilgileri (fiyat, saat vb.) güncellendi
 
 ## 8. Profil Sekmesi
 - **Endpoint:** `GET /api/users/profile`
 - **Authentication:** Bearer Token gerekli
-- **Response:** `200 OK` - Kullanıcı profili başarıyla getirildi
+- **Response:** `200 OK` - Kullanıcı profili ve geçmiş biletleri getirildi
 
 ## 9. Profil Bilgilerini Güncelleme
 - **Endpoint:** `PUT /api/users/profile`
@@ -90,16 +115,14 @@
   {
     "firstName": "Furkan Burak",
     "lastName": "Öztürk",
-    "phone": "+905551234567",
-    "preferences": {
-      "newsletter": true
-    }
+    "phone": "05551112233",
+    "password": "12345"
   }
   ```
 - **Authentication:** Bearer Token gerekli
-- **Response:** `200 OK` - Profil bilgileri başarıyla güncellendi
+- **Response:** `200 OK` - Profil bilgileri güncellendi ve yeni token döndürüldü
 
 ## 10. Hesap Silme
 - **Endpoint:** `DELETE /api/users/profile`
 - **Authentication:** Bearer Token gerekli
-- **Response:** `204 No Content` - Hesap kalıcı olarak silindi
+- **Response:** `200 OK` - Hesap, yorumlar ve rezervasyonlar tamamen silindi

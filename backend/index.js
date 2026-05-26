@@ -14,11 +14,23 @@ if (!DB_URI) {
   console.error("KRİTİK HATA: MONGO_URI çevresel değişkeni (Environment Variable) bulunamadı! Lütfen Vercel panelinden veya .env dosyasından tanımlayın.");
 }
 
-mongoose.connect(DB_URI || '', {
-  serverSelectionTimeoutMS: 5000 // 5 saniye içinde bağlanamazsa bekleme, hemen hata fırlat
-})
-  .then(() => console.log('MongoDB veritabanına başarıyla bağlanıldı.'))
-  .catch((err) => console.error('MongoDB BAĞLANTI HATASI (IP adresi veya URI hatalı olabilir):', err.message));
+// Vercel Serverless Function için bağlantı önbellekleme (Performans artışı için)
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = mongoose.connect(DB_URI || '', {
+    serverSelectionTimeoutMS: 5000, 
+    // connectTimeoutMS silindi çünkü 10s timeout riskini artırıyor, varsayılan kalsın
+    socketTimeoutMS: 45000
+  })
+  .then((m) => {
+    console.log('MongoDB veritabanına başarıyla bağlanıldı.');
+    return m;
+  })
+  .catch((err) => {
+    console.error('MongoDB BAĞLANTI HATASI:', err.message);
+    global.mongoose = null; // Bağlantı hatasında sıfırla ki tekrar denesin
+  });
+}
 
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
