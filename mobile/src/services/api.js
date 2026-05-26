@@ -1,8 +1,12 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-// MobilBackEnd.md dokümanındaki prensiplere göre yapılandırıldı
+// Gerçek Cihaz (Expo Go) testi için Bilgisayarın Ağ IP'si kullanılıyor:
+const API_BASE_URL = 'http://192.168.1.11:5000/api';
+
+// Interceptor vb. eklenebilir
 const api = axios.create({
-  baseURL: 'https://api.yazmuh.com/v1',
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'

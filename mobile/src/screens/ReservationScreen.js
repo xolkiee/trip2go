@@ -170,6 +170,32 @@ export default function ReservationScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Yolcu Değerlendirmeleri */}
+        <View style={styles.reviewsCard}>
+          <Text style={styles.reviewsTitle}>Yolcu Değerlendirmeleri (3)</Text>
+          <View style={styles.reviewItem}>
+             <View style={styles.reviewHeader}>
+                <Text style={styles.reviewerName}>Ö*** A***</Text>
+                <Text style={styles.stars}>★★★★★</Text>
+             </View>
+             <Text style={styles.reviewText}>"Harika bir yolculuktu, koltuklar çok rahattı. Şoför gayet profesyoneldi."</Text>
+          </View>
+          <View style={styles.reviewItem}>
+             <View style={styles.reviewHeader}>
+                <Text style={styles.reviewerName}>F*** B***</Text>
+                <Text style={styles.stars}>★★★★☆</Text>
+             </View>
+             <Text style={styles.reviewText}>"Genel olarak iyiydi fakat 15 dakika rötar yaptı."</Text>
+          </View>
+          <View style={[styles.reviewItem, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 }]}>
+             <View style={styles.reviewHeader}>
+                <Text style={styles.reviewerName}>A*** Y***</Text>
+                <Text style={styles.stars}>★★★★★</Text>
+             </View>
+             <Text style={styles.reviewText}>"Çok memnun kaldım, ikramlar da güzeldi."</Text>
+          </View>
+        </View>
+
       </ScrollView>
 
       {/* Cinsiyet Seçim Modalı */}
@@ -247,5 +273,13 @@ const styles = StyleSheet.create({
   genderBtn: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', marginHorizontal: 8 },
   genderBtnText: { color: '#0b2261', fontWeight: 'bold', fontSize: 16 },
   cancelModalBtn: { padding: 10 },
-  cancelModalBtnText: { color: '#6b7280', fontWeight: 'bold' }
+  cancelModalBtnText: { color: '#6b7280', fontWeight: 'bold' },
+
+  reviewsCard: { backgroundColor: '#fff', padding: 20, borderRadius: 16, marginTop: 20, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
+  reviewsTitle: { fontSize: 18, fontWeight: 'bold', color: '#0b2261', marginBottom: 15 },
+  reviewItem: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 15, marginBottom: 15 },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  reviewerName: { fontWeight: 'bold', color: '#111827' },
+  stars: { color: '#f59e0b', fontSize: 16 },
+  reviewText: { color: '#4b5563', fontStyle: 'italic', fontSize: 14 }
 });
