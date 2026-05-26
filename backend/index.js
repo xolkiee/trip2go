@@ -16,21 +16,43 @@ if (!DB_URI) {
 
 // Vercel Serverless Function için bağlantı önbellekleme (Performans artışı için)
 let cached = global.mongoose;
+
 if (!cached) {
-  cached = global.mongoose = mongoose.connect(DB_URI || '', {
-    serverSelectionTimeoutMS: 5000, 
-    // connectTimeoutMS silindi çünkü 10s timeout riskini artırıyor, varsayılan kalsın
-    socketTimeoutMS: 45000
-  })
-  .then((m) => {
-    console.log('MongoDB veritabanına başarıyla bağlanıldı.');
-    return m;
-  })
-  .catch((err) => {
-    console.error('MongoDB BAĞLANTI HATASI:', err.message);
-    global.mongoose = null; // Bağlantı hatasında sıfırla ki tekrar denesin
-  });
+  cached = global.mongoose = { conn: null, promise: null };
 }
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(DB_URI || '', opts).then((mongoose) => {
+      console.log('MongoDB veritabanına başarıyla bağlanıldı (Serverless).');
+      return mongoose;
+    }).catch(err => {
+      console.error('MongoDB BAĞLANTI HATASI:', err.message);
+      throw err;
+    });
+  }
+  
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+// Gelen her istek öncesinde (middleware) veritabanı bağlantısının hazır olduğundan emin ol
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Veritabanı bağlantı hatası', error: error.message });
+  }
+});
 
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
