@@ -1,20 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import AuthScreen from './AuthScreen';
 
 export default function MyTripsScreen() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
-  useEffect(() => {
-    fetchTickets();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTickets();
+    }, [])
+  );
 
   const fetchTickets = async () => {
     try {
       const token = await AsyncStorage.getItem('trip2go_token');
-      if (!token) return;
+      if (!token) {
+        setIsLoggedIn(false);
+        return;
+      }
+      setIsLoggedIn(true);
       const response = await api.get('/users/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -56,9 +65,20 @@ export default function MyTripsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0b2261" />
       </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <AuthScreen 
+        onSuccess={() => {
+          setIsLoggedIn(true);
+          fetchTickets();
+        }} 
+      />
     );
   }
 
@@ -156,5 +176,10 @@ const styles = StyleSheet.create({
   cancelButton: { flex: 1, alignItems: 'center', padding: 10, backgroundColor: '#fef2f2', borderRadius: 8, marginRight: 8 },
   cancelButtonText: { color: '#d33b2b', fontWeight: 'bold' },
   editButton: { flex: 1, alignItems: 'center', padding: 10, backgroundColor: '#eef2ff', borderRadius: 8, marginLeft: 8 },
-  editButtonText: { color: '#0b2261', fontWeight: 'bold' }
+  editButtonText: { color: '#0b2261', fontWeight: 'bold' },
+
+  guestTitle: { fontSize: 22, fontWeight: 'bold', color: '#0b2261', marginBottom: 10 },
+  guestSubtitle: { fontSize: 15, color: '#6b7280', textAlign: 'center', paddingHorizontal: 40, marginBottom: 30, lineHeight: 22 },
+  loginBtn: { backgroundColor: '#d33b2b', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 12 },
+  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });

@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Keyb
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import AdminAuthScreen from './AdminAuthScreen';
 
-export default function AuthScreen() {
+export default function AuthScreen({ onSuccess }) {
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAdminView, setIsAdminView] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -29,6 +32,11 @@ export default function AuthScreen() {
       
       setLoading(false);
       
+      if (onSuccess) {
+        onSuccess();
+        return;
+      }
+      
       if (Platform.OS === 'web') {
         router.replace('/(tabs)');
       } else {
@@ -38,12 +46,17 @@ export default function AuthScreen() {
       }
     } catch (error) {
       setLoading(false);
-      Alert.alert('Hata', error.response?.data?.message || 'Giriş başarısız oldu.');
+      const errorMsg = error.response?.data?.message || 'Giriş başarısız oldu.';
+      if (Platform.OS === 'web') {
+        window.alert('Hata: ' + errorMsg);
+      } else {
+        Alert.alert('Hata', errorMsg);
+      }
     }
   };
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
       return;
     }
@@ -54,7 +67,7 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
-      await api.post('/auth/register', { name, email, password });
+      await api.post('/auth/register', { firstName, lastName, email, password });
       setLoading(false);
 
       if (Platform.OS === 'web') {
@@ -71,13 +84,17 @@ export default function AuthScreen() {
     }
   };
 
+  if (isAdminView) {
+    return <AdminAuthScreen onGoBack={() => setIsAdminView(false)} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         
         <View style={styles.header}>
           <Text style={styles.logoText}>Trip2Go</Text>
-          <Text style={styles.subtitle}>Biletinizi kolayca ayırtın</Text>
+          <Text style={styles.subtitle}>Hızlı ve güvenli bilet almanın adresi</Text>
         </View>
 
         <View style={styles.formCard}>
@@ -100,9 +117,15 @@ export default function AuthScreen() {
           {/* Form */}
           <View style={styles.formContainer}>
             {activeTab === 'register' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Ad Soyad</Text>
-                <TextInput style={styles.input} placeholder="Örn: Ömer Arı" value={name} onChangeText={setName} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                  <Text style={styles.label}>Adınız</Text>
+                  <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>Soyadınız</Text>
+                  <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+                </View>
               </View>
             )}
 
@@ -138,8 +161,8 @@ export default function AuthScreen() {
         </View>
 
         {/* Admin Login Link */}
-        <TouchableOpacity style={styles.adminLink} onPress={() => router.push('/admin-auth')}>
-          <Text style={styles.adminLinkText}>Yetkili misiniz? Firma Girişi Yapın</Text>
+        <TouchableOpacity style={styles.adminLink} onPress={() => setIsAdminView(true)}>
+          <Text style={styles.adminLinkText}>Yönetici Paneli İçin Tıklayın</Text>
         </TouchableOpacity>
 
       </KeyboardAvoidingView>
