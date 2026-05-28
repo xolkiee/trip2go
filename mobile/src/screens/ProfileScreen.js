@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import AuthScreen from './AuthScreen';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -13,19 +14,24 @@ export default function ProfileScreen() {
     email: '',
     phone: ''
   });
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('trip2go_token');
       if (!token) {
-         router.replace('/auth');
+         setIsLoggedIn(false);
+         setLoading(false);
          return;
       }
+      setIsLoggedIn(true);
 
       const response = await api.get('/users/profile', {
          headers: { Authorization: `Bearer ${token}` }
@@ -110,6 +116,17 @@ export default function ProfileScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0b2261" />
       </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <AuthScreen 
+        onSuccess={() => {
+          setIsLoggedIn(true);
+          fetchProfile();
+        }} 
+      />
     );
   }
 

@@ -13,15 +13,9 @@ export default function RootLayout() {
   const checkToken = async () => {
     try {
       const token = await AsyncStorage.getItem('trip2go_token');
-      if (!token) {
-        // Token yoksa login sayfasına at
-        router.replace('/auth');
-      } else {
-        // Token varsa tabs sayfasına at
-        router.replace('/(tabs)');
-      }
+      // Token olsun ya da olmasın, uygulamayı aç (misafir girişi için)
     } catch (e) {
-      router.replace('/auth');
+      console.log('Token kontrol hatası', e);
     } finally {
       setLoading(false);
     }
