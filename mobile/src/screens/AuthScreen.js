@@ -28,9 +28,14 @@ export default function AuthScreen() {
       await AsyncStorage.setItem('trip2go_user', JSON.stringify(response.data.user));
       
       setLoading(false);
-      Alert.alert('Başarılı', 'Giriş yapıldı!', [
-        { text: 'Tamam', onPress: () => router.replace('/(tabs)') }
-      ]);
+      
+      if (Platform.OS === 'web') {
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Başarılı', 'Giriş yapıldı!', [
+          { text: 'Tamam', onPress: () => router.replace('/(tabs)') }
+        ]);
+      }
     } catch (error) {
       setLoading(false);
       Alert.alert('Hata', error.response?.data?.message || 'Giriş başarısız oldu.');
@@ -51,9 +56,15 @@ export default function AuthScreen() {
     try {
       await api.post('/auth/register', { name, email, password });
       setLoading(false);
-      Alert.alert('Kayıt Başarılı', 'Hesabınız oluşturuldu. Lütfen giriş yapın.', [
-        { text: 'Tamam', onPress: () => setActiveTab('login') }
-      ]);
+
+      if (Platform.OS === 'web') {
+        window.alert('Hesabınız oluşturuldu. Lütfen giriş yapın.');
+        setActiveTab('login');
+      } else {
+        Alert.alert('Kayıt Başarılı', 'Hesabınız oluşturuldu. Lütfen giriş yapın.', [
+          { text: 'Tamam', onPress: () => setActiveTab('login') }
+        ]);
+      }
     } catch (error) {
       setLoading(false);
       Alert.alert('Hata', error.response?.data?.message || 'Kayıt başarısız oldu.');

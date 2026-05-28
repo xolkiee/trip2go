@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, Modal, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function ReservationScreen() {
+  const { tripId } = useLocalSearchParams();
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingSeatId, setPendingSeatId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [tripLoading, setTripLoading] = useState(true);
+  const [tripDetails, setTripDetails] = useState(null);
+  const [seats, setSeats] = useState([]);
 
-  // Gelişmiş koltuk verisi (Cinsiyet ve Partner bilgisi ile)
-  const [seats, setSeats] = useState([
-    { id: '1A', pair: '1B', status: 'available', gender: null }, { id: '1B', pair: '1A', status: 'occupied', gender: 'kadin' },
-    { id: '2A', pair: '2B', status: 'available', gender: null }, { id: '2B', pair: '2A', status: 'available', gender: null },
-    { id: '3A', pair: '3B', status: 'occupied', gender: 'erkek' }, { id: '3B', pair: '3A', status: 'available', gender: null },
-    { id: '4A', pair: '4B', status: 'available', gender: null }, { id: '4B', pair: '4A', status: 'available', gender: null },
-  ]);
-
-  const basePrice = 450;
+  const basePrice = tripDetails?.price || 450;
   const serviceFeePercent = 0.05;
 
+  useEffect(() => {
+    if (tripId) {
+      fetchTripDetails();
+    }
+  }, [tripId]);
+
+  const fetchTripDetails = async () => {
+    try {
+      const response = await api.get(`/trips/${tripId}/details`);
+      if (response.data.success) {
+        setTripDetails(response.data.data.trip);
+        setSeats(response.data.data.seats);
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Sefer detayları alınamadı.');
+    } finally {
+      setTripLoading(false);
+    }
+  };
+
   const handleSeatPress = (seatId) => {
-    // Zaten seçiliyse iptal et
     const isAlreadySelected = selectedSeats.find(s => s.seatNumber === seatId);
     if (isAlreadySelected) {
       setSelectedSeats(selectedSeats.filter(s => s.seatNumber !== seatId));
@@ -69,15 +86,41 @@ export default function ReservationScreen() {
     return totalTicketPrice + totalServiceFee;
   };
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = async () => {
     if (selectedSeats.length === 0) return;
-    setLoading(true);
-    // Simüle etme
-    setTimeout(() => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      if (!token) {
+        Alert.alert('Giriş Yapın', 'Koltuk ayırmak için giriş yapmalısınız.');
+        router.push('/auth');
+        return;
+      }
+      
+      const response = await api.post('/reservations', {
+        tripId,
+        seats: selectedSeats
+      });
+      
+      if (response.data.success) {
+        const reservationId = response.data.data._id;
+        router.push(`/checkout?reservationId=${reservationId}`);
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Rezervasyon oluşturulurken bir hata oluştu.';
+      Alert.alert('Hata', msg);
+    } finally {
       setLoading(false);
-      router.push(`/checkout?seats=${encodeURIComponent(JSON.stringify(selectedSeats))}`);
-    }, 500);
+    }
   };
+
+  if (tripLoading) {
+    return (
+      <View style={[styles.safeArea, {justifyContent: 'center', alignItems: 'center'}]}>
+        <ActivityIndicator size="large" color="#0b2261" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -85,12 +128,14 @@ export default function ReservationScreen() {
         {/* Sefer Kartı */}
         <View style={styles.tripCard}>
           <View style={styles.tripHeader}>
-            <Text style={styles.cityText}>İstanbul</Text>
+            <Text style={styles.cityText}>{tripDetails?.origin}</Text>
             <Text style={styles.arrowText}>➔</Text>
-            <Text style={styles.cityText}>Ankara</Text>
+            <Text style={styles.cityText}>{tripDetails?.destination}</Text>
           </View>
           <View style={styles.tripDetails}>
-            <Text style={styles.detailText}>24 Ekim 2026 | 14:30 | Trip2Go Turizm</Text>
+            <Text style={styles.detailText}>
+              {new Date(tripDetails?.departureTime).toLocaleDateString()} | {new Date(tripDetails?.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} | {tripDetails?.company}
+            </Text>
           </View>
         </View>
 

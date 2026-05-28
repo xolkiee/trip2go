@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// Gerçek Cihaz (Expo Go) testi için Bilgisayarın Ağ IP'si kullanılıyor:
-const API_BASE_URL = 'http://192.168.1.11:5000/api';
+// Gerçek Vercel Sunucusu (Tüm platformlardan erişilebilir):
+const API_BASE_URL = 'https://trip2go-rho.vercel.app/api';
 
 // Interceptor vb. eklenebilir
 const api = axios.create({

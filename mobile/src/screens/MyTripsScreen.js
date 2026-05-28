@@ -1,28 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function MyTripsScreen() {
-  const [trips, setTrips] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setTrips([
-        { id: 1, origin: 'İstanbul', destination: 'Ankara', date: '2026-10-24', time: '14:30', seat: '2A', status: 'Sefer Bekleniyor' },
-        { id: 2, origin: 'İzmir', destination: 'Antalya', date: '2026-05-10', time: '09:00', seat: '4B', status: 'Tamamlandı' },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchTickets();
   }, []);
 
-  const handleCancel = (id) => {
-    Alert.alert('Bileti İptal Et', 'Biletinizi iptal etmek istediğinize emin misiniz? İade koşulları geçerli olacaktır.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Evet, İptal Et', style: 'destructive', onPress: () => {
-          setTrips(trips.map(t => t.id === id ? { ...t, status: 'İptal Edildi' } : t));
-          Alert.alert('İptal Edildi', 'Biletiniz başarıyla iptal edildi.');
-      }}
-    ]);
+  const fetchTickets = async () => {
+    try {
+      const token = await AsyncStorage.getItem('trip2go_token');
+      if (!token) return;
+      const response = await api.get('/users/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.tickets) {
+        setTickets(response.data.tickets);
+      }
+    } catch (error) {
+      console.log('Biletleri çekerken hata:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = (ticketId) => {
+    const doCancel = async () => {
+      try {
+        const token = await AsyncStorage.getItem('trip2go_token');
+        await api.delete(`/tickets/${ticketId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        Alert.alert('İptal Edildi', 'Biletiniz başarıyla iptal edildi.');
+        fetchTickets();
+      } catch (err) {
+        Alert.alert('Hata', 'Bilet iptal edilirken bir sorun oluştu.');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Biletinizi iptal etmek istediğinize emin misiniz? İade koşulları geçerli olacaktır.')) {
+        doCancel();
+      }
+    } else {
+      Alert.alert('Bileti İptal Et', 'Biletinizi iptal etmek istediğinize emin misiniz? İade koşulları geçerli olacaktır.', [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Evet, İptal Et', style: 'destructive', onPress: doCancel }
+      ]);
+    }
   };
 
   if (loading) {
@@ -38,30 +67,57 @@ export default function MyTripsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Biletlerim</Text>
 
-        {trips.map((trip) => {
-          const isActive = trip.status === 'Sefer Bekleniyor';
-          const isCancelled = trip.status === 'İptal Edildi';
+        {tickets.length === 0 && (
+          <Text style={{textAlign: 'center', marginTop: 20}}>Henüz biletiniz bulunmuyor.</Text>
+        )}
+
+        {tickets.map((ticket) => {
+          if (!ticket.trip) return null;
+          const trip = ticket.trip;
+          const isCancelled = ticket.status === 'cancelled';
+          const isCompleted = new Date(trip.arrivalTime) <= new Date() && !isCancelled;
+          const isActive = new Date(trip.departureTime) > new Date() && !isCancelled;
+          
+          let statusText = 'Bilinmiyor';
+          let badgeStyle = styles.doneBadge;
+          let statusTextStyle = styles.statusText;
+
+          if (isCancelled) {
+            statusText = 'İptal Edildi';
+            badgeStyle = styles.cancelBadge;
+            statusTextStyle = {color: '#fff', fontSize: 12, fontWeight: 'bold'};
+          } else if (isCompleted) {
+            statusText = 'Tamamlandı';
+            badgeStyle = styles.doneBadge;
+          } else if (isActive) {
+            statusText = 'Sefer Bekleniyor';
+            badgeStyle = styles.activeBadge;
+          } else {
+            statusText = 'Sefer Gerçekleşiyor';
+            badgeStyle = styles.activeBadge;
+          }
 
           return (
-            <View key={trip.id} style={[styles.ticketCard, isCancelled && styles.cancelledCard]}>
+            <View key={ticket._id} style={[styles.ticketCard, isCancelled && styles.cancelledCard]}>
               <View style={styles.ticketHeader}>
                 <Text style={styles.cityText}>{trip.origin} ➔ {trip.destination}</Text>
-                <View style={[styles.statusBadge, isActive ? styles.activeBadge : (isCancelled ? styles.cancelBadge : styles.doneBadge)]}>
-                  <Text style={[styles.statusText, isCancelled && {color: '#fff'}]}>{trip.status}</Text>
+                <View style={[styles.statusBadge, badgeStyle]}>
+                  <Text style={statusTextStyle}>{statusText}</Text>
                 </View>
               </View>
               
               <View style={styles.ticketDetails}>
-                <Text style={styles.detailText}>Tarih: {trip.date} - {trip.time}</Text>
-                <Text style={styles.detailText}>Koltuk: <Text style={styles.seatText}>{trip.seat}</Text></Text>
+                <Text style={styles.detailText}>Tarih: {new Date(trip.departureTime).toLocaleDateString()} - {new Date(trip.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                <Text style={styles.detailText}>Koltuk: <Text style={styles.seatText}>{ticket.seatNumber}</Text></Text>
+                <Text style={styles.detailText}>Yolcu: {ticket.passenger?.firstName} {ticket.passenger?.lastName}</Text>
               </View>
 
               {isActive && (
                 <View style={styles.actions}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancel(trip.id)}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancel(ticket._id)}>
                     <Text style={styles.cancelButtonText}>Bileti İptal Et</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.editButton} onPress={() => Alert.alert('Yolcu Bilgisi', 'Yolcu güncelleme ekranı açılıyor...')}>
+                  <TouchableOpacity style={styles.editButton} onPress={() => Alert.alert('Bilgi', 'Yolcu bilgisi güncelleme işlemi sadece web üzerinden yapılabilir.')}>
                     <Text style={styles.editButtonText}>Yolcu Güncelle</Text>
                   </TouchableOpacity>
                 </View>
