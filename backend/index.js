@@ -29,6 +29,7 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: 'trip2godb' // Vercel'in eksik URL sebebiyle "test" veritabanına bağlanmasını kesin olarak engeller
     };
 
     cached.promise = mongoose.connect(DB_URI || '', opts).then((mongoose) => {
