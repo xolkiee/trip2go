@@ -6,121 +6,121 @@ import api from '../services/api';
 
 export default function ReservationScreen() {
   const { tripId } = useLocalSearchParams();
+  const [trip, setTrip] = useState(null);
+  const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingSeatId, setPendingSeatId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [tripLoading, setTripLoading] = useState(true);
-  const [tripDetails, setTripDetails] = useState(null);
-  const [seats, setSeats] = useState([]);
-
-  const basePrice = tripDetails?.price || 450;
-  const serviceFeePercent = 0.05;
+  const [loading, setLoading] = useState(true);
+  const [reserving, setReserving] = useState(false);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
-    if (tripId) {
-      fetchTripDetails();
-    }
+    fetchTripDetails();
+    fetchReviews();
   }, [tripId]);
 
   const fetchTripDetails = async () => {
     try {
       const response = await api.get(`/trips/${tripId}/details`);
       if (response.data.success) {
-        setTripDetails(response.data.data.trip);
+        setTrip(response.data.data);
         setSeats(response.data.data.seats);
       }
     } catch (error) {
       Alert.alert('Hata', 'Sefer detayları alınamadı.');
+      router.back();
     } finally {
-      setTripLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleSeatPress = (seatId) => {
-    const isAlreadySelected = selectedSeats.find(s => s.seatNumber === seatId);
+  const fetchReviews = async () => {
+    try {
+      const response = await api.get(`/reviews/trip/${tripId}`);
+      if (response.data.success) {
+        setReviews(response.data.data);
+      }
+    } catch (error) {
+      console.log('Yorumlar çekilemedi');
+    }
+  };
+
+  const getSeatLayoutConfig = () => {
+    if (!trip || !trip.seatLayout) return { columns: 4, is2Plus1: false };
+    if (trip.seatLayout === '2+1') return { columns: 3, is2Plus1: true };
+    if (trip.seatLayout === '3+3') return { columns: 6, is2Plus1: false };
+    return { columns: 4, is2Plus1: false }; // 2+2 or flight default
+  };
+
+  const handleSeatPress = (seatNumber) => {
+    const isAlreadySelected = selectedSeats.find(s => s.seatNumber === seatNumber);
     if (isAlreadySelected) {
-      setSelectedSeats(selectedSeats.filter(s => s.seatNumber !== seatId));
+      setSelectedSeats(selectedSeats.filter(s => s.seatNumber !== seatNumber));
       return;
     }
-
     if (selectedSeats.length >= 5) {
       Alert.alert('Limit Doldu', 'Tek seferde en fazla 5 koltuk seçebilirsiniz.');
       return;
     }
-
-    setPendingSeatId(seatId);
+    setPendingSeatId(seatNumber);
     setModalVisible(true);
   };
 
   const handleGenderSelect = (gender) => {
-    // Yan yana oturma kuralı kontrolü
-    const targetSeat = seats.find(s => s.id === pendingSeatId);
-    const pairSeatInfo = seats.find(s => s.id === targetSeat.pair);
-    
-    // Eğer partner koltuk "occupied" ise ve cinsiyet zıtsa, hata ver
-    if (pairSeatInfo && pairSeatInfo.status === 'occupied' && pairSeatInfo.gender && pairSeatInfo.gender !== gender) {
-      Alert.alert('Kural İhlali', 'Aynı çiftli koltukta zıt cinsiyetler yan yana oturamaz.');
-      setModalVisible(false);
-      setPendingSeatId(null);
-      return;
-    }
-    
-    // Eğer partner koltuk bizim tarafımızdan "selected" ise ve cinsiyet zıtsa, yine hata ver
-    const pairSelected = selectedSeats.find(s => s.seatNumber === targetSeat.pair);
-    if (pairSelected && pairSelected.gender !== gender) {
-      Alert.alert('Kural İhlali', 'Aynı çiftli koltukta zıt cinsiyetler yan yana oturamaz.');
-      setModalVisible(false);
-      setPendingSeatId(null);
-      return;
-    }
-
+    // Mobil versiyonda yan yana oturma kuralı şimdilik basit tutuldu. Tam partner algoritması detaylı eklenebilir.
     setSelectedSeats([...selectedSeats, { seatNumber: pendingSeatId, gender }]);
     setModalVisible(false);
     setPendingSeatId(null);
   };
 
   const calculateTotal = () => {
-    const totalTicketPrice = basePrice * selectedSeats.length;
-    const totalServiceFee = totalTicketPrice * serviceFeePercent;
+    if (!trip) return 0;
+    const totalTicketPrice = trip.price * selectedSeats.length;
+    const totalServiceFee = totalTicketPrice * 0.05;
     return totalTicketPrice + totalServiceFee;
   };
 
   const handleProceedToCheckout = async () => {
     if (selectedSeats.length === 0) return;
+    
+    setReserving(true);
     try {
-      setLoading(true);
       const token = await AsyncStorage.getItem('trip2go_token');
       if (!token) {
-        Alert.alert('Giriş Yapın', 'Koltuk ayırmak için giriş yapmalısınız.');
-        router.push('/auth');
+        Alert.alert('Giriş Yapın', 'Koltuk rezerve etmek için giriş yapmalısınız.');
+        router.replace('/auth');
         return;
       }
-      
+
       const response = await api.post('/reservations', {
-        tripId,
+        tripId: trip._id,
         seats: selectedSeats
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data.success) {
-        const reservationId = response.data.data._id;
-        router.push(`/checkout?reservationId=${reservationId}`);
+        router.push(`/checkout?reservationId=${response.data.data._id}`);
+      } else {
+        Alert.alert('Hata', response.data.message || 'Koltuk rezerve edilemedi.');
       }
     } catch (error) {
-      const msg = error.response?.data?.message || 'Rezervasyon oluşturulurken bir hata oluştu.';
-      Alert.alert('Hata', msg);
+      Alert.alert('Hata', error.response?.data?.message || 'Bağlantı hatası.');
     } finally {
-      setLoading(false);
+      setReserving(false);
     }
   };
 
-  if (tripLoading) {
+  if (loading || !trip) {
     return (
-      <View style={[styles.safeArea, {justifyContent: 'center', alignItems: 'center'}]}>
+      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
         <ActivityIndicator size="large" color="#0b2261" />
       </View>
     );
   }
+
+  const { columns, is2Plus1 } = getSeatLayoutConfig();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -128,18 +128,18 @@ export default function ReservationScreen() {
         {/* Sefer Kartı */}
         <View style={styles.tripCard}>
           <View style={styles.tripHeader}>
-            <Text style={styles.cityText}>{tripDetails?.origin}</Text>
+            <Text style={styles.cityText}>{trip.origin}</Text>
             <Text style={styles.arrowText}>➔</Text>
-            <Text style={styles.cityText}>{tripDetails?.destination}</Text>
+            <Text style={styles.cityText}>{trip.destination}</Text>
           </View>
           <View style={styles.tripDetails}>
             <Text style={styles.detailText}>
-              {new Date(tripDetails?.departureTime).toLocaleDateString()} | {new Date(tripDetails?.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} | {tripDetails?.company}
+              {new Date(trip.departureTime).toLocaleDateString('tr-TR')} | {new Date(trip.departureTime).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})} | {trip.company}
             </Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Koltuk Seçimi</Text>
+        <Text style={styles.sectionTitle}>Koltuk Seçimi ({trip.seatLayout})</Text>
         <Text style={styles.subtitleText}>Lütfen seyahat etmek istediğiniz koltuğu seçin.</Text>
 
         <View style={styles.legendContainer}>
@@ -150,11 +150,11 @@ export default function ReservationScreen() {
 
         <View style={styles.busLayout}>
           <View style={styles.driverSection}><Text style={styles.driverText}>Şoför Mahalli</Text></View>
-          <View style={styles.seatsContainer}>
+          <View style={[styles.seatsContainer, { width: columns * 62 }]}>
             {seats.map((seat) => {
-              const selSeat = selectedSeats.find(s => s.seatNumber === seat.id);
+              const selSeat = selectedSeats.find(s => s.seatNumber === seat.seatNumber);
               const isSelected = !!selSeat;
-              const isOccupied = seat.status === 'occupied';
+              const isOccupied = seat.status === 'occupied' || seat.status === 'reserved';
 
               let seatStyle = [styles.seat];
               let seatTextStyle = [styles.seatText];
@@ -170,30 +170,39 @@ export default function ReservationScreen() {
                 seatStyle.push(styles.seatAvailable);
               }
 
+              // Koridor boşluğu ekleme mantığı
+              if (is2Plus1 && seat.seatNumber % 3 === 2) {
+                 seatStyle.push({ marginRight: 40 }); // Koridor
+              } else if (!is2Plus1 && columns === 4 && seat.seatNumber % 4 === 2) {
+                 seatStyle.push({ marginRight: 40 }); // 2+2 koridor
+              } else if (!is2Plus1 && columns === 6 && seat.seatNumber % 6 === 3) {
+                 seatStyle.push({ marginRight: 40 }); // 3+3 uçak koridor
+              }
+
               return (
                 <TouchableOpacity
-                  key={seat.id}
+                  key={seat.seatNumber}
                   style={seatStyle}
                   disabled={isOccupied}
-                  onPress={() => handleSeatPress(seat.id)}
+                  onPress={() => handleSeatPress(seat.seatNumber)}
                 >
-                  <Text style={seatTextStyle}>{seat.id}</Text>
+                  <Text style={seatTextStyle}>{seat.seatNumber}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* Sepet Özeti Kartı */}
+        {/* Sepet Özeti */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Sefer Özeti</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryText}>Birim Bilet Tutarı</Text>
-            <Text style={styles.summaryVal}>{basePrice} ₺</Text>
+            <Text style={styles.summaryVal}>{trip.price} ₺</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryText}>Birim Hizmet Bedeli</Text>
-            <Text style={styles.summaryVal}>{basePrice * serviceFeePercent} ₺</Text>
+            <Text style={styles.summaryVal}>{trip.price * 0.05} ₺</Text>
           </View>
           <View style={[styles.summaryRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingBottom: 10 }]}>
             <Text style={[styles.summaryText, {fontWeight: 'bold'}]}>Seçili Koltuklar</Text>
@@ -207,43 +216,35 @@ export default function ReservationScreen() {
           <TouchableOpacity 
             style={[styles.checkoutButton, selectedSeats.length === 0 && styles.checkoutButtonDisabled]} 
             onPress={handleProceedToCheckout}
-            disabled={selectedSeats.length === 0 || loading}
+            disabled={selectedSeats.length === 0 || reserving}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.checkoutButtonText}>
+            {reserving ? <ActivityIndicator color="#fff" /> : <Text style={styles.checkoutButtonText}>
               {selectedSeats.length > 0 ? 'Ödemeye İlerle' : 'Lütfen Koltuk Seçin'}
             </Text>}
           </TouchableOpacity>
         </View>
-
+        
         {/* Yolcu Değerlendirmeleri */}
         <View style={styles.reviewsCard}>
-          <Text style={styles.reviewsTitle}>Yolcu Değerlendirmeleri (3)</Text>
-          <View style={styles.reviewItem}>
-             <View style={styles.reviewHeader}>
-                <Text style={styles.reviewerName}>Ö*** A***</Text>
-                <Text style={styles.stars}>★★★★★</Text>
-             </View>
-             <Text style={styles.reviewText}>"Harika bir yolculuktu, koltuklar çok rahattı. Şoför gayet profesyoneldi."</Text>
-          </View>
-          <View style={styles.reviewItem}>
-             <View style={styles.reviewHeader}>
-                <Text style={styles.reviewerName}>F*** B***</Text>
-                <Text style={styles.stars}>★★★★☆</Text>
-             </View>
-             <Text style={styles.reviewText}>"Genel olarak iyiydi fakat 15 dakika rötar yaptı."</Text>
-          </View>
-          <View style={[styles.reviewItem, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 }]}>
-             <View style={styles.reviewHeader}>
-                <Text style={styles.reviewerName}>A*** Y***</Text>
-                <Text style={styles.stars}>★★★★★</Text>
-             </View>
-             <Text style={styles.reviewText}>"Çok memnun kaldım, ikramlar da güzeldi."</Text>
-          </View>
+          <Text style={styles.reviewsTitle}>Yolcu Değerlendirmeleri ({reviews.length})</Text>
+          {reviews.length === 0 ? (
+             <Text style={styles.noReviewText}>Bu sefer için henüz değerlendirme yapılmamış.</Text>
+          ) : (
+             reviews.map((r, index) => (
+               <View key={r.id || index} style={[styles.reviewItem, index === reviews.length - 1 && { borderBottomWidth: 0 }]}>
+                 <View style={styles.reviewHeader}>
+                    <Text style={styles.reviewerName}>{r.maskedUser}</Text>
+                    <Text style={styles.stars}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</Text>
+                 </View>
+                 <Text style={styles.reviewText}>"{r.comment}"</Text>
+               </View>
+             ))
+          )}
         </View>
 
       </ScrollView>
 
-      {/* Cinsiyet Seçim Modalı */}
+      {/* Modal */}
       <Modal animationType="fade" transparent={true} visible={modalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -277,27 +278,22 @@ const styles = StyleSheet.create({
   arrowText: { fontSize: 20, color: '#d1d5db', marginHorizontal: 15 },
   tripDetails: {},
   detailText: { color: '#d1d5db', fontSize: 14 },
-  
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#0b2261', marginBottom: 4 },
   subtitleText: { fontSize: 14, color: '#6b7280', marginBottom: 16 },
-  
   legendContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 },
   legendBox: { width: 16, height: 16, borderRadius: 4, marginRight: 6, borderWidth: 1, borderColor: '#d1d5db' },
-
   busLayout: { backgroundColor: '#fff', borderRadius: 24, padding: 20, alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#e5e7eb' },
   driverSection: { width: '100%', padding: 12, backgroundColor: '#f4f5f9', borderRadius: 12, alignItems: 'center', marginBottom: 20 },
   driverText: { color: '#6b7280', fontWeight: '500' },
-  seatsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', width: 200 },
-  
-  seat: { width: 80, height: 80, justifyContent: 'center', alignItems: 'center', borderRadius: 16, marginBottom: 16, borderWidth: 2, borderColor: 'transparent' },
+  seatsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
+  seat: { width: 50, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 10, marginBottom: 12, marginRight: 12, borderWidth: 2, borderColor: 'transparent' },
   seatAvailable: { backgroundColor: '#fff', borderColor: '#d1d5db' },
   maleSeat: { backgroundColor: '#bae6fd' },
   femaleSeat: { backgroundColor: '#fbcfe8' },
   selectedBorder: { borderColor: '#0b2261', borderWidth: 3 },
-  seatText: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  seatTextWhite: { fontSize: 18, fontWeight: '600', color: '#0b2261' },
-
+  seatText: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  seatTextWhite: { fontSize: 16, fontWeight: '600', color: '#0b2261' },
   summaryCard: { backgroundColor: '#fff', padding: 20, borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   summaryTitle: { fontSize: 18, fontWeight: 'bold', color: '#0b2261', marginBottom: 16 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
@@ -305,11 +301,9 @@ const styles = StyleSheet.create({
   summaryVal: { color: '#111827', fontSize: 15, fontWeight: '600' },
   summaryTotalText: { color: '#111827', fontSize: 18, fontWeight: 'bold' },
   summaryTotalVal: { color: '#d33b2b', fontSize: 22, fontWeight: 'bold' },
-
   checkoutButton: { backgroundColor: '#d33b2b', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 },
   checkoutButtonDisabled: { backgroundColor: '#e5e7eb' },
   checkoutButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '80%', alignItems: 'center' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#0b2261', marginBottom: 8 },
@@ -319,12 +313,12 @@ const styles = StyleSheet.create({
   genderBtnText: { color: '#0b2261', fontWeight: 'bold', fontSize: 16 },
   cancelModalBtn: { padding: 10 },
   cancelModalBtnText: { color: '#6b7280', fontWeight: 'bold' },
-
-  reviewsCard: { backgroundColor: '#fff', padding: 20, borderRadius: 16, marginTop: 20, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
+  reviewsCard: { backgroundColor: '#fff', padding: 20, borderRadius: 16, marginTop: 20, elevation: 3 },
   reviewsTitle: { fontSize: 18, fontWeight: 'bold', color: '#0b2261', marginBottom: 15 },
   reviewItem: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 15, marginBottom: 15 },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   reviewerName: { fontWeight: 'bold', color: '#111827' },
   stars: { color: '#f59e0b', fontSize: 16 },
-  reviewText: { color: '#4b5563', fontStyle: 'italic', fontSize: 14 }
+  reviewText: { color: '#4b5563', fontStyle: 'italic', fontSize: 14 },
+  noReviewText: { color: '#6b7280', fontStyle: 'italic' }
 });

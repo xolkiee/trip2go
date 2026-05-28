@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// Gerçek Vercel Sunucusu (Tüm platformlardan erişilebilir):
+// Artık direkt olarak Vercel (Online) sunucusuna bağlanıyoruz!
 const API_BASE_URL = 'https://trip2go-rho.vercel.app/api';
 
 // Interceptor vb. eklenebilir
