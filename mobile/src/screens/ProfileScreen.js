@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 export default function ProfileScreen() {
@@ -19,22 +21,27 @@ export default function ProfileScreen() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      // Backend tamamlandığında bu istek çalışacak
-      // const response = await api.get('/users/profile');
-      // setProfile(response.data);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      if (!token) {
+         router.replace('/auth');
+         return;
+      }
+
+      const response = await api.get('/users/profile', {
+         headers: { Authorization: `Bearer ${token}` }
+      });
       
-      // Şimdilik mock veri gösterelim UI için
-      setTimeout(() => {
-        setProfile({
-          firstName: 'Furkan Burak',
-          lastName: 'Öztürk',
-          email: 'furkan@trip2go.com',
-          phone: '+90 555 123 45 67'
-        });
-        setLoading(false);
-      }, 1000);
+      const user = response.data;
+      setProfile({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      });
     } catch (error) {
+      console.log('Profil Hatası:', error);
       Alert.alert('Hata', 'Profil bilgileri alınamadı.');
+    } finally {
       setLoading(false);
     }
   };
@@ -42,37 +49,60 @@ export default function ProfileScreen() {
   const handleUpdate = async () => {
     try {
       setSaving(true);
-      // const response = await api.put('/users/profile', profile);
-      setTimeout(() => {
-        Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
-        setSaving(false);
-      }, 1000);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      await api.put('/users/profile', profile, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
     } catch (error) {
       Alert.alert('Hata', 'Profil güncellenirken bir sorun oluştu.');
+    } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Hesabı Sil',
-      'Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
-      [
+    const doDelete = async () => {
+      try {
+        const token = await AsyncStorage.getItem('trip2go_token');
+        await api.delete('/users/profile', { headers: { Authorization: `Bearer ${token}` } });
+        await AsyncStorage.removeItem('trip2go_token');
+        await AsyncStorage.removeItem('trip2go_user');
+        Alert.alert('Hesap Silindi', 'Hesabınız başarıyla kapatıldı.');
+        router.replace('/auth');
+      } catch (error) {
+        Alert.alert('Hata', 'Hesap silinirken hata oluştu.');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Hesabınızı kalıcı olarak silmek istediğinize emin misiniz?')) {
+        doDelete();
+      }
+    } else {
+      Alert.alert('Hesabı Sil', 'Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.', [
         { text: 'İptal', style: 'cancel' },
-        { 
-          text: 'Evet, Sil', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // await api.delete('/users/profile');
-              Alert.alert('Hesap Silindi', 'Hesabınız başarıyla kapatıldı.');
-            } catch (error) {
-              Alert.alert('Hata', 'Hesap silinirken hata oluştu.');
-            }
-          }
-        }
-      ]
-    );
+        { text: 'Evet, Sil', style: 'destructive', onPress: doDelete }
+      ]);
+    }
+  };
+
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      await AsyncStorage.removeItem('trip2go_token');
+      await AsyncStorage.removeItem('trip2go_user');
+      router.replace('/auth');
+    };
+
+    if (Platform.OS === 'web') {
+      doLogout(); // Web'de direkt çıkış yapalım, Alert bazen takılıyor
+    } else {
+      Alert.alert('Çıkış Yap', 'Hesabınızdan çıkmak istediğinize emin misiniz?', [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Çıkış Yap', style: 'destructive', onPress: doLogout }
+      ]);
+    }
   };
 
   if (loading) {
@@ -88,7 +118,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.headerContainer}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{profile.firstName[0]}{profile.lastName[0]}</Text>
+            <Text style={styles.avatarText}>{profile.firstName?.[0] || '?'}{profile.lastName?.[0] || ''}</Text>
           </View>
           <Text style={styles.nameText}>{profile.firstName} {profile.lastName}</Text>
           <Text style={styles.emailText}>{profile.email}</Text>
@@ -142,6 +172,11 @@ export default function ProfileScreen() {
           <Text style={styles.dangerDescription}>
             Hesabınızı sildiğinizde tüm geçmiş biletleriniz ve kişisel verileriniz KVKK standartlarına uygun olarak silinir.
           </Text>
+          
+          <TouchableOpacity style={[styles.deleteButton, {backgroundColor: '#6b7280', marginBottom: 15}]} onPress={handleLogout}>
+            <Text style={styles.deleteButtonText}>Hesaptan Çıkış Yap</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
             <Text style={styles.deleteButtonText}>Hesabımı Kalıcı Olarak Sil</Text>
           </TouchableOpacity>
