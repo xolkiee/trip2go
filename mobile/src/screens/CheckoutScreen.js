@@ -1,19 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 export default function CheckoutScreen() {
-  const { seats } = useLocalSearchParams();
-  const parsedSeats = seats ? JSON.parse(seats) : [];
+  const { reservationId } = useLocalSearchParams();
   
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
-  const [loading, setLoading] = useState(false);
-  const [passengers, setPassengers] = useState(parsedSeats.map(s => ({
-    seatNumber: s.seatNumber,
-    gender: s.gender,
-    firstName: '', lastName: '', identityNumber: '', contactPhone: ''
-  })));
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [reservation, setReservation] = useState(null);
+  const [passengers, setPassengers] = useState([]);
   const [payment, setPayment] = useState({ cardNumber: '', expiry: '', cvv: '' });
+
+  useEffect(() => {
+    if (reservationId) {
+      fetchReservation();
+    }
+  }, [reservationId]);
+
+  const fetchReservation = async () => {
+    try {
+      const response = await api.get(`/reservations/${reservationId}`);
+      if (response.data.success) {
+        const resData = response.data.data;
+        setReservation(resData);
+        
+        // Timer'ı sunucudan dönen expiresAt'e göre ayarla
+        const expiresAt = new Date(resData.expiresAt).getTime();
+        const now = new Date().getTime();
+        const diffSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
+        setTimeLeft(diffSeconds);
+
+        setPassengers(resData.seats.map(s => ({
+          seatNumber: s.seatNumber,
+          gender: s.gender,
+          firstName: '', lastName: '', identityNumber: '', contactPhone: ''
+        })));
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Rezervasyon bilgileri alınamadı veya süresi doldu.', [
+        { text: 'Geri Dön', onPress: () => router.back() }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 10 dk Sayaç
   useEffect(() => {
@@ -79,8 +112,7 @@ export default function CheckoutScreen() {
     setPayment({...payment, expiry: val.length > 2 ? `${val.slice(0, 2)}/${val.slice(2)}` : val});
   };
 
-  const handlePaymentSubmit = () => {
-    // Validasyon
+  const handlePaymentSubmit = async () => {
     for (let i = 0; i < passengers.length; i++) {
       const p = passengers[i];
       if (!p.firstName || !p.lastName || p.identityNumber.length !== 11 || p.contactPhone.length < 14) {
@@ -93,13 +125,52 @@ export default function CheckoutScreen() {
       return;
     }
 
-    setLoading(true);
-    setTimeout(() => {
-      Alert.alert('Ödeme Başarılı', `${passengers.length} adet bilet başarıyla satın alındı.`, [
-        { text: 'Seyahatlerime Git', onPress: () => { setLoading(false); router.replace('/mytrips'); } }
-      ]);
-    }, 1500);
+    try {
+      setSubmitting(true);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      const response = await api.post('/tickets', {
+        reservationId,
+        passengers,
+        payment
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        Alert.alert('Ödeme Başarılı', `${passengers.length} adet bilet başarıyla satın alındı.`, [
+          { text: 'Seyahatlerime Git', onPress: () => { setSubmitting(false); router.replace('/mytrips'); } }
+        ]);
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Ödeme işlemi başarısız oldu.';
+      Alert.alert('Hata', msg);
+      setSubmitting(false);
+    }
   };
+
+  const handleCancelReservation = async () => {
+    try {
+      setSubmitting(true);
+      await api.delete(`/reservations/${reservationId}`);
+    } catch(err) {
+      console.log('Rezervasyon iptali sırasında hata', err);
+    } finally {
+      router.back();
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.safeArea, {justifyContent: 'center', alignItems: 'center'}]}>
+        <ActivityIndicator size="large" color="#d33b2b" />
+      </View>
+    );
+  }
+
+  const basePrice = reservation?.tripId?.price || 450;
+  const totalTicketPrice = basePrice * passengers.length;
+  const serviceFee = (basePrice * 0.05) * passengers.length;
+  const totalAmount = totalTicketPrice + serviceFee;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -139,16 +210,16 @@ export default function CheckoutScreen() {
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Sipariş Özeti</Text>
-          <View style={styles.summaryRow}><Text>Bilet Fiyatı Toplamı</Text><Text>{450 * passengers.length} ₺</Text></View>
-          <View style={styles.summaryRow}><Text>Hizmet Bedeli Toplamı</Text><Text>{(450 * 0.05) * passengers.length} ₺</Text></View>
-          <View style={styles.summaryRowTotal}><Text style={styles.totalText}>Ödenecek Tutar</Text><Text style={styles.totalVal}>{(450 + 22.5) * passengers.length} ₺</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryTextWhite}>Bilet Fiyatı Toplamı</Text><Text style={styles.summaryTextWhite}>{totalTicketPrice} ₺</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryTextWhite}>Hizmet Bedeli Toplamı</Text><Text style={styles.summaryTextWhite}>{serviceFee} ₺</Text></View>
+          <View style={styles.summaryRowTotal}><Text style={styles.totalText}>Ödenecek Tutar</Text><Text style={styles.totalVal}>{totalAmount} ₺</Text></View>
         </View>
 
-        <TouchableOpacity style={styles.payButton} onPress={handlePaymentSubmit} disabled={loading || timeLeft === 0}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.payButtonText}>Ödemeyi Tamamla</Text>}
+        <TouchableOpacity style={styles.payButton} onPress={handlePaymentSubmit} disabled={submitting || timeLeft === 0}>
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.payButtonText}>Ödemeyi Tamamla</Text>}
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()} disabled={loading}>
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancelReservation} disabled={submitting}>
           <Text style={styles.cancelButtonText}>İptal Et ve Geri Dön</Text>
         </TouchableOpacity>
 
@@ -178,6 +249,7 @@ const styles = StyleSheet.create({
   summaryCard: { backgroundColor: '#0b2261', padding: 20, borderRadius: 16, marginBottom: 20 },
   summaryTitle: { fontSize: 16, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  summaryTextWhite: { color: '#e5e7eb' },
   summaryRowTotal: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#4b5563', paddingTop: 10 },
   totalText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   totalVal: { color: '#d33b2b', fontSize: 20, fontWeight: 'bold' },

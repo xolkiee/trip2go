@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 export default function SearchScreen() {
@@ -28,6 +29,23 @@ export default function SearchScreen() {
     }
   };
 
+  const handleLogout = async () => {
+    const doLogout = async () => {
+      await AsyncStorage.removeItem('trip2go_token');
+      await AsyncStorage.removeItem('trip2go_user');
+      router.replace('/auth');
+    };
+
+    if (Platform.OS === 'web') {
+      doLogout();
+    } else {
+      Alert.alert('Çıkış Yap', 'Hesabınızdan çıkmak istediğinize emin misiniz?', [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Çıkış Yap', style: 'destructive', onPress: doLogout }
+      ]);
+    }
+  };
+
   const handleSearch = () => {
     setSearching(true);
     setTimeout(() => {
@@ -47,6 +65,9 @@ export default function SearchScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nereye Gidiyoruz?</Text>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutBtnText}>Çıkış ⍈</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchCard}>
@@ -113,8 +134,10 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f4f5f9' },
-  header: { backgroundColor: '#0b2261', padding: 20, paddingTop: 40, paddingBottom: 60 },
+  header: { backgroundColor: '#0b2261', padding: 20, paddingTop: 40, paddingBottom: 60, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   headerTitle: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+  logoutBtn: { backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  logoutBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   
   searchCard: { backgroundColor: '#fff', margin: 20, marginTop: -40, borderRadius: 16, padding: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
   typeToggle: { flexDirection: 'row', backgroundColor: '#f4f5f9', borderRadius: 12, padding: 5, marginBottom: 20 },
