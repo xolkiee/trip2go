@@ -15,6 +15,7 @@ export default function ReservationScreen() {
   const [reserving, setReserving] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [myTickets, setMyTickets] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchTripDetails();
@@ -51,6 +52,13 @@ export default function ReservationScreen() {
   const fetchMyTickets = async () => {
     try {
       const token = await AsyncStorage.getItem('trip2go_token');
+      const userStr = await AsyncStorage.getItem('trip2go_user');
+      
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.role === 'admin') setIsAdmin(true);
+      }
+
       if (token) {
         const response = await api.get('/users/profile', {
           headers: { Authorization: `Bearer ${token}` }
@@ -67,12 +75,16 @@ export default function ReservationScreen() {
 
   const getSeatLayoutConfig = () => {
     if (!trip || !trip.seatLayout) return { columns: 4, is2Plus1: false };
+    if (trip.type === 'flight' || trip.seatLayout === 'flight' || trip.seatLayout === '3+3') return { columns: 6, is2Plus1: false };
     if (trip.seatLayout === '2+1') return { columns: 3, is2Plus1: true };
-    if (trip.seatLayout === '3+3') return { columns: 6, is2Plus1: false };
-    return { columns: 4, is2Plus1: false }; // 2+2 or flight default
+    return { columns: 4, is2Plus1: false }; // 2+2 default
   };
 
   const handleSeatPress = (seatNumber) => {
+    if (isAdmin) {
+      Alert.alert('Yetkisiz İşlem', 'Yönetici hesapları bilet satın alamaz.');
+      return;
+    }
     const isAlreadySelected = selectedSeats.find(s => s.seatNumber === seatNumber);
     if (isAlreadySelected) {
       setSelectedSeats(selectedSeats.filter(s => s.seatNumber !== seatNumber));
@@ -90,6 +102,8 @@ export default function ReservationScreen() {
     const { columns, is2Plus1 } = getSeatLayoutConfig();
 
     const getAdjacentSeatNumber = (seatNumber) => {
+      if (trip && trip.type === 'flight') return null; // Uçaklarda cinsiyet yan yana kuralı genelde aranmaz
+      
       if (is2Plus1) {
         if (seatNumber % 3 === 1) return null; // Tekli koltuk
         if (seatNumber % 3 === 2) return seatNumber + 1;
@@ -259,15 +273,21 @@ export default function ReservationScreen() {
             <Text style={styles.summaryTotalVal}>{calculateTotal()} ₺</Text>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.checkoutButton, selectedSeats.length === 0 && styles.checkoutButtonDisabled]} 
-            onPress={handleProceedToCheckout}
-            disabled={selectedSeats.length === 0 || reserving}
-          >
-            {reserving ? <ActivityIndicator color="#fff" /> : <Text style={styles.checkoutButtonText}>
-              {selectedSeats.length > 0 ? 'Ödemeye İlerle' : 'Lütfen Koltuk Seçin'}
-            </Text>}
-          </TouchableOpacity>
+          {isAdmin ? (
+            <View style={{backgroundColor: '#fee2e2', padding: 12, borderRadius: 8, marginTop: 15}}>
+              <Text style={{color: '#ef4444', textAlign: 'center', fontWeight: 'bold'}}>Yönetici hesabı ile bilet satın alınamaz.</Text>
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.checkoutButton, selectedSeats.length === 0 && styles.checkoutButtonDisabled]} 
+              onPress={handleProceedToCheckout}
+              disabled={selectedSeats.length === 0 || reserving}
+            >
+              {reserving ? <ActivityIndicator color="#fff" /> : <Text style={styles.checkoutButtonText}>
+                {selectedSeats.length > 0 ? 'Ödemeye İlerle' : 'Lütfen Koltuk Seçin'}
+              </Text>}
+            </TouchableOpacity>
+          )}
         </View>
         
         {/* Yolcu Değerlendirmeleri */}

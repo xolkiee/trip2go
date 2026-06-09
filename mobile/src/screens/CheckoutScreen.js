@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
@@ -22,7 +22,10 @@ export default function CheckoutScreen() {
 
   const fetchReservation = async () => {
     try {
-      const response = await api.get(`/reservations/${reservationId}`);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      const response = await api.get(`/reservations/${reservationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.data.success) {
         const resData = response.data.data;
         setReservation(resData);
@@ -33,16 +36,16 @@ export default function CheckoutScreen() {
         const diffSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
         setTimeLeft(diffSeconds);
 
-        setPassengers(resData.seats.map(s => ({
+        let initialPassengers = resData.seats.map(s => ({
           seatNumber: s.seatNumber,
           gender: s.gender,
-          firstName: '', lastName: '', identityNumber: '', contactPhone: ''
-        })));
+          passengerInfo: { firstName: '', lastName: '', identityNumber: '', contactPhone: '' }
+        }));
+        
+        setPassengers(initialPassengers);
       }
     } catch (error) {
-      Alert.alert('Hata', 'Rezervasyon bilgileri alınamadı veya süresi doldu.', [
-        { text: 'Geri Dön', onPress: () => router.back() }
-      ]);
+      setReservation(null);
     } finally {
       setLoading(false);
     }
@@ -55,7 +58,10 @@ export default function CheckoutScreen() {
         if (prev <= 1) {
           clearInterval(timer);
           Alert.alert('Süre Doldu', 'Rezervasyon süreniz doldu, lütfen tekrar deneyin.', [
-            { text: 'Tamam', onPress: () => router.back() }
+            { text: 'Tamam', onPress: () => {
+              if (router.canGoBack()) router.back();
+              else router.replace('/');
+            }}
           ]);
           return 0;
         }
@@ -73,7 +79,7 @@ export default function CheckoutScreen() {
 
   const handlePassengerChange = (index, field, val) => {
     const newPass = [...passengers];
-    newPass[index][field] = val;
+    newPass[index].passengerInfo[field] = val;
     setPassengers(newPass);
   };
 
@@ -114,7 +120,7 @@ export default function CheckoutScreen() {
 
   const handlePaymentSubmit = async () => {
     for (let i = 0; i < passengers.length; i++) {
-      const p = passengers[i];
+      const p = passengers[i].passengerInfo;
       if (!p.firstName || !p.lastName || p.identityNumber.length !== 11 || p.contactPhone.length < 14) {
         Alert.alert('Eksik Bilgi', `${i + 1}. Yolcu için bilgileri eksiksiz (11 haneli TCKN ve Telefon) giriniz.`);
         return;
@@ -129,21 +135,28 @@ export default function CheckoutScreen() {
       setSubmitting(true);
       const token = await AsyncStorage.getItem('trip2go_token');
       const response = await api.post('/tickets', {
-        reservationId,
+        tripId: reservation.trip._id,
         passengers,
-        payment
+        price: reservation.trip.price
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.data.success) {
-        Alert.alert('Ödeme Başarılı', `${passengers.length} adet bilet başarıyla satın alındı.`, [
-          { text: 'Seyahatlerime Git', onPress: () => { setSubmitting(false); router.replace('/mytrips'); } }
-        ]);
+        if (Platform.OS === 'web') {
+          window.alert(`Ödeme Başarılı: ${passengers.length} adet bilet başarıyla satın alındı.`);
+          setSubmitting(false);
+          router.replace('/(tabs)');
+        } else {
+          Alert.alert('Ödeme Başarılı', `${passengers.length} adet bilet başarıyla satın alındı.`, [
+            { text: 'Seyahatlerime Git', onPress: () => { setSubmitting(false); router.replace('/(tabs)'); } }
+          ]);
+        }
       }
     } catch (error) {
       const msg = error.response?.data?.message || 'Ödeme işlemi başarısız oldu.';
-      Alert.alert('Hata', msg);
+      if (Platform.OS === 'web') window.alert('Hata: ' + msg);
+      else Alert.alert('Hata', msg);
       setSubmitting(false);
     }
   };
@@ -151,11 +164,18 @@ export default function CheckoutScreen() {
   const handleCancelReservation = async () => {
     try {
       setSubmitting(true);
-      await api.delete(`/reservations/${reservationId}`);
+      const token = await AsyncStorage.getItem('trip2go_token');
+      await api.delete(`/reservations/${reservationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
     } catch(err) {
       console.log('Rezervasyon iptali sırasında hata', err);
     } finally {
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/');
+      }
     }
   };
 
@@ -167,9 +187,23 @@ export default function CheckoutScreen() {
     );
   }
 
-  const basePrice = reservation?.tripId?.price || 450;
+  if (!reservation) {
+    return (
+      <View style={[styles.safeArea, {justifyContent: 'center', alignItems: 'center', padding: 20}]}>
+        <Text style={{fontSize: 18, color: '#6b7280', textAlign: 'center'}}>Rezervasyon bilgileri bulunamadı veya süresi dolmuş.</Text>
+        <TouchableOpacity style={{marginTop: 20, padding: 15, backgroundColor: '#0b2261', borderRadius: 10}} onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/(tabs)');
+        }}>
+          <Text style={{color: '#fff', fontWeight: 'bold'}}>Geri Dön</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const basePrice = reservation?.trip?.price || 450;
   const totalTicketPrice = basePrice * passengers.length;
-  const serviceFee = (basePrice * 0.05) * passengers.length;
+  const serviceFee = 25 * passengers.length;
   const totalAmount = totalTicketPrice + serviceFee;
 
   return (
@@ -190,11 +224,11 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={styles.row}>
-              <TextInput style={[styles.input, {flex: 1, marginRight: 8}]} placeholder="Ad" value={p.firstName} onChangeText={t => handlePassengerChange(idx, 'firstName', t)} />
-              <TextInput style={[styles.input, {flex: 1, marginLeft: 8}]} placeholder="Soyad" value={p.lastName} onChangeText={t => handlePassengerChange(idx, 'lastName', t)} />
+              <TextInput style={[styles.input, {flex: 1, marginRight: 8}]} placeholder="Ad" value={p.passengerInfo.firstName} onChangeText={t => handlePassengerChange(idx, 'firstName', t)} />
+              <TextInput style={[styles.input, {flex: 1, marginLeft: 8}]} placeholder="Soyad" value={p.passengerInfo.lastName} onChangeText={t => handlePassengerChange(idx, 'lastName', t)} />
             </View>
-            <TextInput style={styles.input} placeholder="TCKN (11 Hane)" keyboardType="numeric" maxLength={11} value={p.identityNumber} onChangeText={t => handleIdentityChange(idx, t)} />
-            <TextInput style={styles.input} placeholder="İletişim Numarası (05xx xxx xx xx)" keyboardType="phone-pad" maxLength={15} value={p.contactPhone} onChangeText={t => handlePhoneChange(idx, t)} />
+            <TextInput style={styles.input} placeholder="TCKN (11 Hane)" keyboardType="numeric" maxLength={11} value={p.passengerInfo.identityNumber} onChangeText={t => handleIdentityChange(idx, t)} />
+            <TextInput style={styles.input} placeholder="İletişim Numarası (05xx xxx xx xx)" keyboardType="phone-pad" maxLength={15} value={p.passengerInfo.contactPhone} onChangeText={t => handlePhoneChange(idx, t)} />
           </View>
         ))}
 

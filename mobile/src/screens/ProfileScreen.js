@@ -11,9 +11,12 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState({
     firstName: '',
     lastName: '',
+    lastName: '',
     email: '',
-    phone: ''
+    phone: '',
+    password: ''
   });
+  const [hasActiveTickets, setHasActiveTickets] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   useFocusEffect(
@@ -42,8 +45,14 @@ export default function ProfileScreen() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || ''
+        phone: user.phone || '',
+        password: ''
       });
+      
+      if (user.tickets) {
+         const active = user.tickets.some(t => t.status === 'active' && new Date(t.trip?.arrivalTime) >= new Date());
+         setHasActiveTickets(active);
+      }
     } catch (error) {
       console.log('Profil Hatası:', error);
       Alert.alert('Hata', 'Profil bilgileri alınamadı.');
@@ -52,17 +61,60 @@ export default function ProfileScreen() {
     }
   };
 
+  const handlePhoneChange = (text) => {
+    let rawVal = text;
+    if (profile.phone.length > rawVal.length && profile.phone.endsWith(' ') && !rawVal.endsWith(' ')) {
+       rawVal = rawVal.slice(0, -1);
+    }
+    let val = rawVal.replace(/\D/g, '');
+    if (val.length > 0 && val[0] !== '0') val = '0' + val;
+    if (val.length > 11) val = val.slice(0, 11);
+    
+    let formatted = val;
+    if (val.length > 3 && val.length <= 6) {
+      formatted = `${val.slice(0,4)} ${val.slice(4)}`;
+    } else if (val.length > 6 && val.length <= 8) {
+      formatted = `${val.slice(0,4)} ${val.slice(4,7)} ${val.slice(7)}`;
+    } else if (val.length > 8) {
+      formatted = `${val.slice(0,4)} ${val.slice(4,7)} ${val.slice(7,9)} ${val.slice(9)}`;
+    }
+    setProfile({...profile, phone: formatted});
+  };
+
   const handleUpdate = async () => {
+    if (profile.phone && profile.phone.length < 14) {
+       if (Platform.OS === 'web') window.alert('Lütfen telefon numarasını eksiksiz giriniz (örn: 05xx xxx xx xx).');
+       else Alert.alert('Hata', 'Lütfen telefon numarasını eksiksiz giriniz (örn: 05xx xxx xx xx).');
+       return;
+    }
+
     try {
       setSaving(true);
       const token = await AsyncStorage.getItem('trip2go_token');
-      await api.put('/users/profile', profile, {
+      
+      const payload = { 
+        firstName: profile.firstName, 
+        lastName: profile.lastName, 
+        phone: profile.phone 
+      };
+      if (profile.password) payload.password = profile.password;
+
+      const response = await api.put('/users/profile', payload, {
          headers: { Authorization: `Bearer ${token}` }
       });
       
-      Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
+      if (response.data.success) {
+        await AsyncStorage.setItem('trip2go_token', response.data.token);
+        await AsyncStorage.setItem('trip2go_user', JSON.stringify(response.data.user));
+        setProfile({...profile, password: ''});
+        
+        if (Platform.OS === 'web') window.alert(response.data.message || 'Profil bilgileriniz güncellendi.');
+        else Alert.alert('Başarılı', response.data.message || 'Profil bilgileriniz güncellendi.');
+      }
     } catch (error) {
-      Alert.alert('Hata', 'Profil güncellenirken bir sorun oluştu.');
+      const msg = error.response?.data?.message || 'Profil güncellenirken bir sorun oluştu.';
+      if (Platform.OS === 'web') window.alert('Hata: ' + msg);
+      else Alert.alert('Hata', msg);
     } finally {
       setSaving(false);
     }
@@ -165,13 +217,34 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.label}>E-Posta Adresi <Text style={styles.mutedText}>(Değiştirilemez)</Text></Text>
+            <TextInput 
+              style={[styles.input, {backgroundColor: '#e5e7eb', color: '#6b7280'}]} 
+              value={profile.email}
+              editable={false}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Telefon Numarası</Text>
             <TextInput 
               style={styles.input} 
               value={profile.phone}
-              onChangeText={(text) => setProfile({...profile, phone: text})}
-              placeholder="Telefon Numaranız"
+              onChangeText={handlePhoneChange}
+              placeholder="Örn: 0555 444 33 22"
               keyboardType="phone-pad"
+              maxLength={15}
+            />
+          </View>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Yeni Şifre Belirle <Text style={styles.mutedText}>(Aynı kalması için boş bırakın)</Text></Text>
+            <TextInput 
+              style={styles.input} 
+              value={profile.password}
+              onChangeText={(text) => setProfile({...profile, password: text})}
+              placeholder="Yeni şifrenizi girin..."
+              secureTextEntry
             />
           </View>
           
@@ -187,8 +260,17 @@ export default function ProfileScreen() {
         <View style={styles.dangerZone}>
           <Text style={styles.dangerTitle}>Tehlikeli Bölge</Text>
           <Text style={styles.dangerDescription}>
-            Hesabınızı sildiğinizde tüm geçmiş biletleriniz ve kişisel verileriniz KVKK standartlarına uygun olarak silinir.
+            Hesabınızı silerseniz sisteme ait verileriniz, seyahat geçmişiniz ve platformda yaptığınız tüm yorumlar kalıcı olarak silinecektir. Bu işlem geri alınamaz.
           </Text>
+          
+          {hasActiveTickets && (
+             <View style={styles.warningBox}>
+               <Text style={styles.warningBoxText}>
+                 <Text style={{fontWeight: 'bold'}}>Dikkat! </Text>
+                 Şu anda ileri tarihli ve iptal edilmemiş "Aktif" biletleriniz bulunmaktadır. Hesabınızı silmeniz durumunda bu biletler otomatik olarak İPTAL EDİLECEK ve kurallar gereği ücret iadesi YAPILMAYACAKTIR.
+               </Text>
+             </View>
+          )}
           
           <TouchableOpacity style={[styles.deleteButton, {backgroundColor: '#6b7280', marginBottom: 15}]} onPress={handleLogout}>
             <Text style={styles.deleteButtonText}>Hesaptan Çıkış Yap</Text>
@@ -331,4 +413,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  mutedText: {
+    color: '#9ca3af',
+    fontWeight: 'normal',
+    fontSize: 12,
+  },
+  warningBox: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#f87171',
+    borderWidth: 1,
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15
+  },
+  warningBoxText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    lineHeight: 20
+  }
 });

@@ -13,6 +13,8 @@ export default function MyTripsScreen() {
   const [activeReviewTripId, setActiveReviewTripId] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [activeUpdateTicketId, setActiveUpdateTicketId] = useState(null);
+  const [updateData, setUpdateData] = useState({ firstName: '', lastName: '', identityNumber: '', contactPhone: '' });
 
   useFocusEffect(
     useCallback(() => {
@@ -64,10 +66,12 @@ export default function MyTripsScreen() {
         await api.delete(`/tickets/${ticketId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        Alert.alert('İptal Edildi', 'Biletiniz başarıyla iptal edildi.');
+        if (Platform.OS === 'web') window.alert('Biletiniz başarıyla iptal edildi.');
+        else Alert.alert('İptal Edildi', 'Biletiniz başarıyla iptal edildi.');
         fetchTickets();
       } catch (err) {
-        Alert.alert('Hata', 'Bilet iptal edilirken bir sorun oluştu.');
+        if (Platform.OS === 'web') window.alert('Hata: Bilet iptal edilirken bir sorun oluştu.');
+        else Alert.alert('Hata', 'Bilet iptal edilirken bir sorun oluştu.');
       }
     };
 
@@ -146,6 +150,37 @@ export default function MyTripsScreen() {
         { text: 'Vazgeç', style: 'cancel' },
         { text: 'Evet, Sil', style: 'destructive', onPress: doDelete }
       ]);
+    }
+  };
+
+  const handleOpenUpdate = (ticket) => {
+    if (activeUpdateTicketId === ticket._id) {
+      setActiveUpdateTicketId(null);
+    } else {
+      setActiveUpdateTicketId(ticket._id);
+      setUpdateData({
+        firstName: ticket.passenger?.firstName || '',
+        lastName: ticket.passenger?.lastName || '',
+        identityNumber: ticket.passenger?.identityNumber || '',
+        contactPhone: ticket.passenger?.contactPhone || ''
+      });
+    }
+  };
+
+  const handleSubmitUpdate = async () => {
+    try {
+      const res = await api.put(`/tickets/${activeUpdateTicketId}/passenger`, { passenger: updateData }, {
+        headers: { Authorization: `Bearer ${await AsyncStorage.getItem('trip2go_token')}` }
+      });
+      if (res.data.success) {
+        if(Platform.OS === 'web') window.alert('Yolcu bilgileri başarıyla güncellendi.');
+        else Alert.alert('Başarılı', 'Yolcu bilgileri başarıyla güncellendi.');
+        setActiveUpdateTicketId(null);
+        fetchTickets();
+      }
+    } catch (err) {
+      if(Platform.OS === 'web') window.alert('Hata: ' + (err.response?.data?.message || 'Bilgiler güncellenemedi.'));
+      else Alert.alert('Hata', err.response?.data?.message || 'Bilgiler güncellenemedi.');
     }
   };
 
@@ -252,22 +287,41 @@ export default function MyTripsScreen() {
                 {groupTickets.map(ticket => {
                   const isTicketCancelled = ticket.status === 'cancelled';
                   return (
-                    <View key={ticket._id} style={styles.passengerRow}>
-                      <View style={{flex: 1}}>
-                        <Text style={styles.passengerText}>
-                          Yolcu: <Text style={{fontWeight:'normal'}}>{ticket.passenger?.firstName} {ticket.passenger?.lastName}</Text> | Koltuk No: <Text style={{fontWeight:'bold'}}>{ticket.seatNumber}</Text>
-                        </Text>
-                        {isTicketCancelled && <Text style={styles.cancelledText}>(İptal Edildi)</Text>}
+                    <View key={ticket._id} style={{marginBottom: 8}}>
+                      <View style={[styles.passengerRow, {marginBottom: activeUpdateTicketId === ticket._id ? 0 : 8}]}>
+                        <View style={{flex: 1}}>
+                          <Text style={styles.passengerText}>
+                            Yolcu: <Text style={{fontWeight:'normal'}}>{ticket.passenger?.firstName} {ticket.passenger?.lastName}</Text> | Koltuk No: <Text style={{fontWeight:'bold'}}>{ticket.seatNumber}</Text>
+                          </Text>
+                          {isTicketCancelled && <Text style={styles.cancelledText}>(İptal Edildi)</Text>}
+                        </View>
+                        {!isTicketCancelled && isPending && (
+                           <View style={{flexDirection: 'row', gap: 8}}>
+                             <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#eef2ff'}]} onPress={() => handleOpenUpdate(ticket)}>
+                               <Text style={[styles.miniBtnText, {color: '#4f46e5'}]}>Güncelle</Text>
+                             </TouchableOpacity>
+                             <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#fee2e2'}]} onPress={() => handleCancel(ticket._id)}>
+                               <Text style={[styles.miniBtnText, {color: '#ef4444'}]}>İptal Et</Text>
+                             </TouchableOpacity>
+                           </View>
+                        )}
                       </View>
-                      {!isTicketCancelled && isPending && (
-                         <View style={{flexDirection: 'row', gap: 8}}>
-                           <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#eef2ff'}]} onPress={() => Alert.alert('Bilgi', 'Yolcu bilgisi güncelleme işlemi sadece web üzerinden yapılabilir.')}>
-                             <Text style={[styles.miniBtnText, {color: '#4f46e5'}]}>Güncelle</Text>
-                           </TouchableOpacity>
-                           <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#fee2e2'}]} onPress={() => handleCancel(ticket._id)}>
-                             <Text style={[styles.miniBtnText, {color: '#ef4444'}]}>İptal Et</Text>
-                           </TouchableOpacity>
-                         </View>
+                      
+                      {activeUpdateTicketId === ticket._id && (
+                        <View style={{padding: 10, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginTop: -5, marginBottom: 10}}>
+                          <TextInput style={styles.updateInput} placeholder="Ad" value={updateData.firstName} onChangeText={t => setUpdateData({...updateData, firstName: t})} />
+                          <TextInput style={styles.updateInput} placeholder="Soyad" value={updateData.lastName} onChangeText={t => setUpdateData({...updateData, lastName: t})} />
+                          <TextInput style={styles.updateInput} placeholder="TCKN (11 Hane)" keyboardType="numeric" maxLength={11} value={updateData.identityNumber} onChangeText={t => setUpdateData({...updateData, identityNumber: t.replace(/\D/g,'')})} />
+                          <TextInput style={styles.updateInput} placeholder="Telefon (05xx xxx xx xx)" keyboardType="phone-pad" maxLength={15} value={updateData.contactPhone} onChangeText={t => setUpdateData({...updateData, contactPhone: t})} />
+                          <View style={{flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 5}}>
+                            <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#e2e8f0'}]} onPress={() => setActiveUpdateTicketId(null)}>
+                              <Text style={[styles.miniBtnText, {color: '#475569'}]}>Vazgeç</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.miniBtn, {backgroundColor: '#10b981'}]} onPress={handleSubmitUpdate}>
+                              <Text style={[styles.miniBtnText, {color: '#fff'}]}>Kaydet</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
                       )}
                     </View>
                   );
@@ -364,7 +418,8 @@ const styles = StyleSheet.create({
   reviewForm: { marginTop: 15, backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' },
   reviewInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, textAlignVertical: 'top', height: 80, marginBottom: 15 },
   cancelReviewBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' },
-  cancelReviewText: { color: '#64748b', fontWeight: 'bold' },
-  saveReviewBtn: { backgroundColor: '#0b2261', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
-  saveReviewText: { color: '#fff', fontWeight: 'bold' }
+  cancelReviewText: { color: '#ef4444', fontWeight: 'bold' },
+  saveReviewBtn: { backgroundColor: '#10b981', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  saveReviewText: { color: '#fff', fontWeight: 'bold' },
+  updateInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 6, padding: 8, marginBottom: 8, fontSize: 14 }
 });
