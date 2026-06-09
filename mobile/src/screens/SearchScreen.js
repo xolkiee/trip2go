@@ -111,8 +111,8 @@ export default function SearchScreen() {
     setLocationSearchQuery('');
     
     const filtered = locations.filter(loc => {
-      if (vehicleType === 'bus' && loc.type === 'airport') return false;
-      if (vehicleType === 'flight' && loc.type === 'bus_station') return false;
+      if (vehicleType === 'bus' && loc.type !== 'city') return false;
+      if (vehicleType === 'flight' && loc.type !== 'airport') return false;
       return true;
     });
     
@@ -125,8 +125,8 @@ export default function SearchScreen() {
     const lowerText = text.toLocaleLowerCase('tr-TR');
     
     let baseFilter = locations.filter(loc => {
-      if (vehicleType === 'bus' && loc.type === 'airport') return false;
-      if (vehicleType === 'flight' && loc.type === 'bus_station') return false;
+      if (vehicleType === 'bus' && loc.type !== 'city') return false;
+      if (vehicleType === 'flight' && loc.type !== 'airport') return false;
       return true;
     });
 
@@ -273,7 +273,10 @@ export default function SearchScreen() {
                 </View>
               </View>
               <View style={styles.tripBottom}>
-                <Text style={styles.seatInfo}>Son {trip.availableSeats} Koltuk</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Text style={styles.seatInfo}>Son {trip.availableSeats} Koltuk</Text>
+                  <Text style={{color: '#6b7280', fontSize: 13, marginLeft: 10}}>• {trip.type === 'flight' ? 'Flight Standart' : `${trip.seatLayout || '2+2'} Standart`}</Text>
+                </View>
                 <Text style={styles.buyText}>Seç ve İlerle ➔</Text>
               </View>
             </TouchableOpacity>

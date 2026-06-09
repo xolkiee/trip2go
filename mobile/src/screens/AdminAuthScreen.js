@@ -30,10 +30,10 @@ export default function AdminAuthScreen({ onGoBack }) {
       
       setLoading(false);
       if (Platform.OS === 'web') {
-        router.replace('/admin'); // Assuming /admin is the admin panel route
+        router.replace('/(tabs)');
       } else {
         Alert.alert('Hoş Geldiniz', 'Yönetici Paneline Yönlendiriliyorsunuz.', [
-          { text: 'Tamam', onPress: () => router.replace('/admin') }
+          { text: 'Tamam', onPress: () => router.replace('/(tabs)') }
         ]);
       }
     } catch (error) {
