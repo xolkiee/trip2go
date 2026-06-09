@@ -14,10 +14,12 @@ export default function ReservationScreen() {
   const [loading, setLoading] = useState(true);
   const [reserving, setReserving] = useState(false);
   const [reviews, setReviews] = useState([]);
+  const [myTickets, setMyTickets] = useState([]);
 
   useEffect(() => {
     fetchTripDetails();
     fetchReviews();
+    fetchMyTickets();
   }, [tripId]);
 
   const fetchTripDetails = async () => {
@@ -46,6 +48,23 @@ export default function ReservationScreen() {
     }
   };
 
+  const fetchMyTickets = async () => {
+    try {
+      const token = await AsyncStorage.getItem('trip2go_token');
+      if (token) {
+        const response = await api.get('/users/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.tickets) {
+          const tripTickets = response.data.tickets.filter(t => t.trip && (t.trip._id === tripId || t.trip === tripId) && t.status !== 'cancelled');
+          setMyTickets(tripTickets);
+        }
+      }
+    } catch (error) {
+      console.log('Biletler çekilemedi');
+    }
+  };
+
   const getSeatLayoutConfig = () => {
     if (!trip || !trip.seatLayout) return { columns: 4, is2Plus1: false };
     if (trip.seatLayout === '2+1') return { columns: 3, is2Plus1: true };
@@ -68,7 +87,34 @@ export default function ReservationScreen() {
   };
 
   const handleGenderSelect = (gender) => {
-    // Mobil versiyonda yan yana oturma kuralı şimdilik basit tutuldu. Tam partner algoritması detaylı eklenebilir.
+    const { columns, is2Plus1 } = getSeatLayoutConfig();
+
+    const getAdjacentSeatNumber = (seatNumber) => {
+      if (is2Plus1) {
+        if (seatNumber % 3 === 1) return null; // Tekli koltuk
+        if (seatNumber % 3 === 2) return seatNumber + 1;
+        if (seatNumber % 3 === 0) return seatNumber - 1;
+      } else if (columns === 4) { // 2+2
+        if (seatNumber % 4 === 1) return seatNumber + 1;
+        if (seatNumber % 4 === 2) return seatNumber - 1;
+        if (seatNumber % 4 === 3) return seatNumber + 1;
+        if (seatNumber % 4 === 0) return seatNumber - 1;
+      }
+      return null;
+    };
+
+    const adjacentSeatNumber = getAdjacentSeatNumber(pendingSeatId);
+    if (adjacentSeatNumber) {
+      const adjacentSeat = seats.find(s => s.seatNumber === adjacentSeatNumber);
+      if (adjacentSeat && (adjacentSeat.status === 'occupied' || adjacentSeat.status === 'reserved')) {
+        const isMySeat = myTickets.some(t => t.seatNumber === adjacentSeatNumber);
+        if (!isMySeat && adjacentSeat.gender && adjacentSeat.gender !== gender) {
+          Alert.alert('Hata', `Bu koltuğun yanında bir ${adjacentSeat.gender === 'erkek' ? 'erkek' : 'kadın'} yolcu oturmaktadır. Farklı cinsiyette koltuk seçemezsiniz.`);
+          return;
+        }
+      }
+    }
+
     setSelectedSeats([...selectedSeats, { seatNumber: pendingSeatId, gender }]);
     setModalVisible(false);
     setPendingSeatId(null);
@@ -150,7 +196,7 @@ export default function ReservationScreen() {
 
         <View style={styles.busLayout}>
           <View style={styles.driverSection}><Text style={styles.driverText}>Şoför Mahalli</Text></View>
-          <View style={[styles.seatsContainer, { width: columns * 62 }]}>
+          <View style={[styles.seatsContainer, { width: (columns * 62) + 40 }]}>
             {seats.map((seat) => {
               const selSeat = selectedSeats.find(s => s.seatNumber === seat.seatNumber);
               const isSelected = !!selSeat;
@@ -171,7 +217,7 @@ export default function ReservationScreen() {
               }
 
               // Koridor boşluğu ekleme mantığı
-              if (is2Plus1 && seat.seatNumber % 3 === 2) {
+              if (is2Plus1 && seat.seatNumber % 3 === 1) {
                  seatStyle.push({ marginRight: 40 }); // Koridor
               } else if (!is2Plus1 && columns === 4 && seat.seatNumber % 4 === 2) {
                  seatStyle.push({ marginRight: 40 }); // 2+2 koridor
