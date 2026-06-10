@@ -1,4 +1,5 @@
 const Location = require('../models/Location');
+const redisClient = require('../config/redis');
 
 // Kapsamlı Havalimanı Listesi
 const majorAirports = [
@@ -108,7 +109,7 @@ const seedLocationsIfEmpty = async () => {
     }
 };
 
-// @desc    Tüm şehir, ilçe ve havalimanı lokasyonlarını getirir
+// @desc    Tüm lokasyonları getirir (Havalimanları ve Şehirler)
 // @route   GET /api/locations
 // @access  Public
 const getLocations = async (req, res) => {
@@ -116,8 +117,29 @@ const getLocations = async (req, res) => {
     // Sadece bir kere DB'ye seed (tohumlama) yapılır
     await seedLocationsIfEmpty();
 
-    const locations = await Location.find();
+    const cacheKey = 'locations_cache';
     
+    // Redis cache kontrolü
+    if (redisClient.isOpen || redisClient.isReady) {
+      const cachedLocations = await redisClient.get(cacheKey);
+      if (cachedLocations) {
+        console.log('Lokasyonlar Redis önbelleğinden getirildi.');
+        return res.status(200).json({
+          success: true,
+          count: JSON.parse(cachedLocations).length,
+          data: JSON.parse(cachedLocations)
+        });
+      }
+    }
+
+    const locations = await Location.find().sort({ name: 1 });
+    
+    // Redis cache'e kaydet (1 gün süreyle)
+    if (redisClient.isOpen || redisClient.isReady) {
+      await redisClient.setEx(cacheKey, 86400, JSON.stringify(locations));
+      console.log('Lokasyonlar veritabanından çekilip Redis önbelleğine kaydedildi.');
+    }
+
     // Frontend'in kolay kullanımı için id formatını maple
     const mapped = locations.map(loc => {
         const obj = loc.toObject();

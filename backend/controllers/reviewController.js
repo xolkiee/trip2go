@@ -1,4 +1,5 @@
 const Review = require('../models/Review');
+const redisClient = require('../config/redis');
 
 // @desc    Yeni bir değerlendirme (review) ekler
 // @route   POST /api/reviews
@@ -12,6 +13,11 @@ const addReview = async (req, res) => {
     }
 
     const newReview = await Review.create({ tripId, userId, rating, comment });
+
+    // Cache'i temizle
+    if (redisClient.isOpen || redisClient.isReady) {
+      await redisClient.del(`reviews_trip_${tripId}`);
+    }
 
     res.status(201).json({
       success: true,
@@ -37,6 +43,20 @@ const addReview = async (req, res) => {
 const getTripReviews = async (req, res) => {
   try {
     const tripId = req.params.id;
+    const cacheKey = `reviews_trip_${tripId}`;
+
+    if (redisClient.isOpen || redisClient.isReady) {
+      const cachedReviews = await redisClient.get(cacheKey);
+      if (cachedReviews) {
+        console.log(`[Redis] Yorumlar cache'ten getirildi: ${cacheKey}`);
+        return res.status(200).json({
+          success: true,
+          count: JSON.parse(cachedReviews).length,
+          data: JSON.parse(cachedReviews)
+        });
+      }
+    }
+
     const Trip = require('../models/Trip');
 
     const currentTrip = await Trip.findById(tripId);
@@ -77,6 +97,11 @@ const getTripReviews = async (req, res) => {
       };
     });
 
+    if (redisClient.isOpen || redisClient.isReady) {
+      await redisClient.setEx(cacheKey, 3600, JSON.stringify(mapped));
+      console.log(`[Redis] Yorumlar cache'e eklendi: ${cacheKey}`);
+    }
+
     res.status(200).json({
       success: true,
       count: mapped.length,
@@ -107,6 +132,10 @@ const updateReview = async (req, res) => {
 
     await review.save();
 
+    if (redisClient.isOpen || redisClient.isReady) {
+      await redisClient.del(`reviews_trip_${review.tripId}`);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Yorum güncellendi.',
@@ -135,6 +164,10 @@ const deleteReview = async (req, res) => {
 
     if (!review) {
       return res.status(404).json({ message: 'Silinecek yorum bulunamadı.' });
+    }
+
+    if (redisClient.isOpen || redisClient.isReady) {
+      await redisClient.del(`reviews_trip_${review.tripId}`);
     }
 
     res.status(200).json({
