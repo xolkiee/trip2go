@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Alert, Platform, Modal, FlatList } from 'react-native';
+import {  View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform, Modal, FlatList  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -245,44 +246,54 @@ export default function SearchScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.resultsContainer}>
+      <View style={{ flex: 1 }}>
         {(searching || initialLoading) && <ActivityIndicator size="large" color="#d33b2b" style={{marginTop: 50}} />}
         
         {results && results.length === 0 && !initialLoading && (
           <Text style={styles.noResultsText}>Aradığınız kriterlere uygun sefer bulunamadı.</Text>
         )}
 
-        {results && results.map((trip) => {
-          const time = new Date(trip.departureTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-          const arrival = new Date(trip.arrivalTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-          return (
-            <TouchableOpacity key={trip._id} style={styles.tripCard} onPress={() => router.push(`/reservation?tripId=${trip._id}`)}>
-              <View style={styles.tripTop}>
-                <Text style={styles.tripCompany}>{trip.company}</Text>
-                <Text style={styles.tripPrice}>{trip.price} ₺</Text>
-              </View>
-              <View style={styles.tripMiddle}>
-                <View style={styles.routeCol}>
-                  <Text style={styles.time}>{time}</Text>
-                  <Text style={styles.city}>{trip.origin}</Text>
-                </View>
-                <Text style={styles.routeArrow}>➔</Text>
-                <View style={styles.routeCol}>
-                  <Text style={styles.time}>{arrival}</Text>
-                  <Text style={styles.city}>{trip.destination}</Text>
-                </View>
-              </View>
-              <View style={styles.tripBottom}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Text style={styles.seatInfo}>Son {trip.availableSeats} Koltuk</Text>
-                  <Text style={{color: '#6b7280', fontSize: 13, marginLeft: 10}}>• {trip.type === 'flight' ? 'Flight Standart' : `${trip.seatLayout || '2+2'} Standart`}</Text>
-                </View>
-                <Text style={styles.buyText}>Seç ve İlerle ➔</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        {results && !initialLoading && !searching && (
+          <FlatList
+            data={results}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.resultsContainer}
+            initialNumToRender={5}
+            maxToRenderPerBatch={5}
+            windowSize={5}
+            renderItem={({ item: trip }) => {
+              const time = new Date(trip.departureTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+              const arrival = new Date(trip.arrivalTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+              return (
+                <TouchableOpacity style={styles.tripCard} onPress={() => router.push(`/reservation?tripId=${trip._id}`)}>
+                  <View style={styles.tripTop}>
+                    <Text style={styles.tripCompany}>{trip.company}</Text>
+                    <Text style={styles.tripPrice}>{trip.price} ₺</Text>
+                  </View>
+                  <View style={styles.tripMiddle}>
+                    <View style={styles.routeCol}>
+                      <Text style={styles.time}>{time}</Text>
+                      <Text style={styles.city}>{trip.origin}</Text>
+                    </View>
+                    <Text style={styles.routeArrow}>➔</Text>
+                    <View style={styles.routeCol}>
+                      <Text style={styles.time}>{arrival}</Text>
+                      <Text style={styles.city}>{trip.destination}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.tripBottom}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text style={styles.seatInfo}>Son {trip.availableSeats} Koltuk</Text>
+                      <Text style={{color: '#6b7280', fontSize: 13, marginLeft: 10}}>• {trip.type === 'flight' ? 'Flight Standart' : `${trip.seatLayout || '2+2'} Standart`}</Text>
+                    </View>
+                    <Text style={styles.buyText}>Seç ve İlerle ➔</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
+      </View>
 
       {/* LOCATION PICKER MODAL */}
       <Modal visible={locationModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setLocationModalVisible(false)}>
@@ -413,3 +424,4 @@ const styles = StyleSheet.create({
   dateItemText: { fontSize: 16, color: '#374151', textAlign: 'center' },
   dateItemTextSelected: { color: '#0b2261', fontWeight: 'bold' }
 });
+

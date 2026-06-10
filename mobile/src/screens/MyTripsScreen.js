@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, TextInput } from 'react-native';
+import {  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Platform, TextInput  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
@@ -42,15 +43,21 @@ export default function MyTripsScreen() {
         setTickets(response.data.tickets);
 
         const uniqueTrips = [...new Set(response.data.tickets.filter(t => t.trip).map(t => t.trip._id))];
-        for (const tripId of uniqueTrips) {
-          const rRes = await api.get(`/reviews/trip/${tripId}`);
-          if (rRes.data.success) {
-            const userReview = rRes.data.data.find(r => r.userId === userId && r.tripId === tripId);
-            if (userReview) {
-              setReviews(prev => ({ ...prev, [tripId]: userReview }));
+        
+        // Asenkron istekleri paralel çalıştırarak bekleme süresini (donmayı) yok ediyoruz
+        await Promise.all(uniqueTrips.map(async (tripId) => {
+          try {
+            const rRes = await api.get(`/reviews/trip/${tripId}`);
+            if (rRes.data.success) {
+              const userReview = rRes.data.data.find(r => r.userId === userId && r.tripId === tripId);
+              if (userReview) {
+                setReviews(prev => ({ ...prev, [tripId]: userReview }));
+              }
             }
+          } catch (e) {
+            console.log("Review çekilirken hata", e);
           }
-        }
+        }));
       }
     } catch (error) {
       console.log('Biletleri çekerken hata:', error);
@@ -423,3 +430,4 @@ const styles = StyleSheet.create({
   saveReviewText: { color: '#fff', fontWeight: 'bold' },
   updateInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 6, padding: 8, marginBottom: 8, fontSize: 14 }
 });
+

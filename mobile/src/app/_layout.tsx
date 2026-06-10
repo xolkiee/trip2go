@@ -37,7 +37,6 @@ export default function RootLayout() {
       <Stack.Screen name="forgot-password" options={{ title: "Şifremi Unuttum", headerShown: false }} />
       <Stack.Screen name="reservation" options={{ title: "Sefer & Koltuk Seçimi", headerBackTitle: "Geri" }} />
       <Stack.Screen name="checkout" options={{ title: "Güvenli Ödeme", headerBackTitle: "Geri" }} />
-      <Stack.Screen name="admin" options={{ title: "Admin Paneli", headerShown: false }} />
     </Stack>
   );
 }

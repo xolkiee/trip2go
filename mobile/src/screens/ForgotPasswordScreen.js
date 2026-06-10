@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import {  View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import api from '../services/api';
 
@@ -141,3 +142,4 @@ const styles = StyleSheet.create({
   loginLink: { marginTop: 20, alignItems: 'center' },
   loginLinkText: { color: '#0b2261', fontSize: 15, fontWeight: 'bold' }
 });
+

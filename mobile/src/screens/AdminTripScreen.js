@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, TextInput, Modal, ActivityIndicator, FlatList, Platform } from 'react-native';
+import {  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, ActivityIndicator, FlatList, Platform  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
@@ -450,3 +451,4 @@ const styles = StyleSheet.create({
   dateItemText: { fontSize: 16, color: '#374151', textAlign: 'center' },
   dateItemTextSelected: { color: '#0b2261', fontWeight: 'bold' }
 });
+
