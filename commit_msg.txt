@@ -1,0 +1,1 @@
+Mobil uygulama UI güncellemeleri, CI/CD pipeline düzeltmeleri ve altyapı optimizasyonları yapıldı.

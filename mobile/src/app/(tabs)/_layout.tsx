@@ -40,7 +40,7 @@ export default function TabLayout() {
         name="mytrips"
         options={{
           title: 'Seyahatlerim',
-          href: isAdmin ? null : '/mytrips',
+          href: isAdmin ? null : '/(tabs)/mytrips',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎟️</Text>,
         }}
       />
@@ -48,7 +48,7 @@ export default function TabLayout() {
         name="admin"
         options={{
           title: 'Sefer Yönetimi',
-          href: isAdmin ? '/admin' : null,
+          href: isAdmin ? '/(tabs)/admin' : null,
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text>,
         }}
       />

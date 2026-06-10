@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import {  View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ActivityIndicator  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import api from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -207,3 +208,4 @@ const styles = StyleSheet.create({
   normalUserLink: { marginTop: 25, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f3f4f6', paddingTop: 20 },
   normalUserLinkText: { color: '#9ca3af', fontSize: 13 }
 });
+

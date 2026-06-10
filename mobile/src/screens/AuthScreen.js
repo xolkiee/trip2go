@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import {  View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
@@ -198,3 +199,4 @@ const styles = StyleSheet.create({
   adminLink: { marginTop: 30, alignItems: 'center' },
   adminLinkText: { color: '#fff', fontSize: 14, textDecorationLine: 'underline' }
 });
+

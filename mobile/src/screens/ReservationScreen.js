@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
@@ -188,9 +189,9 @@ export default function ReservationScreen() {
         {/* Sefer Kartı */}
         <View style={styles.tripCard}>
           <View style={styles.tripHeader}>
-            <Text style={styles.cityText}>{trip.origin}</Text>
+            <Text style={styles.cityText} numberOfLines={2} adjustsFontSizeToFit>{trip.origin}</Text>
             <Text style={styles.arrowText}>➔</Text>
-            <Text style={styles.cityText}>{trip.destination}</Text>
+            <Text style={styles.cityText} numberOfLines={2} adjustsFontSizeToFit>{trip.destination}</Text>
           </View>
           <View style={styles.tripDetails}>
             <Text style={styles.detailText}>
@@ -210,18 +211,27 @@ export default function ReservationScreen() {
 
         <View style={styles.busLayout}>
           <View style={styles.driverSection}><Text style={styles.driverText}>Şoför Mahalli</Text></View>
-          <View style={[styles.seatsContainer, { width: (columns * 62) + 40 }]}>
-            {seats.map((seat) => {
+          <View style={[styles.seatsContainer, { width: (trip?.type === 'flight') ? (columns * 46) + 40 : (columns * 62) + 40 }]}>
+            {seats.map((seat, index) => {
               const selSeat = selectedSeats.find(s => s.seatNumber === seat.seatNumber);
               const isSelected = !!selSeat;
               const isOccupied = seat.status === 'occupied' || seat.status === 'reserved';
+              const isFlight = trip?.type === 'flight' || trip?.seatLayout === 'flight' || trip?.seatLayout === '3+3';
 
               let seatStyle = [styles.seat];
               let seatTextStyle = [styles.seatText];
 
+              if (isFlight) {
+                 seatStyle.push({ width: 40, height: 40, marginRight: 6 });
+              }
+
               if (isOccupied) {
-                seatStyle.push(seat.gender === 'erkek' ? styles.maleSeat : styles.femaleSeat);
-                seatTextStyle.push(styles.seatTextWhite);
+                if (seat.gender) {
+                   seatStyle.push(seat.gender === 'erkek' ? styles.maleSeat : styles.femaleSeat);
+                   seatTextStyle.push(styles.seatTextWhite);
+                } else {
+                   seatStyle.push({ backgroundColor: '#e5e7eb' });
+                }
               } else if (isSelected) {
                 seatStyle.push(selSeat.gender === 'erkek' ? styles.maleSeat : styles.femaleSeat);
                 seatStyle.push(styles.selectedBorder);
@@ -231,12 +241,12 @@ export default function ReservationScreen() {
               }
 
               // Koridor boşluğu ekleme mantığı
-              if (is2Plus1 && seat.seatNumber % 3 === 1) {
+              if (isFlight && (index + 1) % columns === 3) {
+                 seatStyle.push({ marginRight: 20 }); // 3+3 uçak koridor
+              } else if (trip.seatLayout === '2+1' && (index + 1) % columns === 1) {
                  seatStyle.push({ marginRight: 40 }); // Koridor
-              } else if (!is2Plus1 && columns === 4 && seat.seatNumber % 4 === 2) {
+              } else if (trip.seatLayout === '2+2' && (index + 1) % columns === 2) {
                  seatStyle.push({ marginRight: 40 }); // 2+2 koridor
-              } else if (!is2Plus1 && columns === 6 && seat.seatNumber % 6 === 3) {
-                 seatStyle.push({ marginRight: 40 }); // 3+3 uçak koridor
               }
 
               return (
@@ -340,7 +350,7 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 40 },
   tripCard: { backgroundColor: '#0b2261', padding: 24, borderRadius: 16, marginBottom: 20 },
   tripHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  cityText: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  cityText: { fontSize: 24, fontWeight: 'bold', color: '#fff', flexShrink: 1 },
   arrowText: { fontSize: 20, color: '#d1d5db', marginHorizontal: 15 },
   tripDetails: {},
   detailText: { color: '#d1d5db', fontSize: 14 },
