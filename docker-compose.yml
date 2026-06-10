@@ -11,6 +11,28 @@ services:
     env_file:
       - ./backend/.env
     restart: unless-stopped
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - trip2go-network
+
+  redis:
+    image: redis:alpine
+    container_name: trip2go-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - trip2go-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: trip2go-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
     networks:
       - trip2go-network
 

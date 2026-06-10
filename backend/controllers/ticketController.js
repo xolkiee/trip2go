@@ -1,6 +1,7 @@
 const Trip = require('../models/Trip');
 const Ticket = require('../models/Ticket');
 const Reservation = require('../models/Reservation');
+const { sendToQueue } = require('../services/rabbitmq');
 
 // @desc    Yeni bilet satın al ve koltuğun statüsünü occupied yap
 // @route   POST /api/tickets
@@ -45,6 +46,15 @@ const createTicket = async (req, res) => {
 
     // Kullanıcının bu sefere ait arkada kalan açık tüm rezervasyonlarını temizle (Sepeti tamamen boşalt)
     await Reservation.deleteMany({ trip: tripId, user: req.user._id });
+
+    // RABBITMQ GÖNDERİMİ (Asenkron)
+    sendToQueue('ticket_notifications', {
+      userEmail: req.user.email || 'user@example.com',
+      ticketId: createdTickets[0]._id, // İlk biletin IDsini referans alıyoruz
+      price: price * passengers.length,
+      tripId: tripId,
+      passengersCount: passengers.length
+    });
 
     return res.status(201).json({
       success: true,
@@ -94,6 +104,13 @@ const cancelTicket = async (req, res) => {
           await trip.save();
        }
     }
+
+    // RABBITMQ GÖNDERİMİ (Asenkron İade İşlemi)
+    sendToQueue('ticket_refunds', {
+      userEmail: req.user.email || 'user@example.com',
+      ticketId: ticket._id,
+      price: ticket.price || trip.price // Eski biletse kendi fiyatını al, yoksa sefer fiyatı
+    });
 
     return res.status(200).json({
       success: true,

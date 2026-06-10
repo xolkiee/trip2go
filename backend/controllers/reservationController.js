@@ -1,6 +1,7 @@
 const Trip = require('../models/Trip');
 const Reservation = require('../models/Reservation');
 const Ticket = require('../models/Ticket');
+const redisClient = require('../config/redis');
 
 // @desc    Geçici Koltuk Kilitleme (10 Dk)
 // @route   POST /api/reservations
@@ -29,6 +30,13 @@ const createReservation = async (req, res) => {
        if (!seat) return res.status(404).json({ success: false, message: `${seatNum} numaralı koltuk bulunamadı.` });
        if (seat.status === 'occupied') {
           return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk zaten satılmış.` });
+       }
+
+       // REDIS LOCK CHECK
+       const lockKey = `reservation:${tripId}:${seatNum}`;
+       const isLocked = await redisClient.get(lockKey);
+       if (isLocked && isLocked !== req.user._id.toString()) {
+          return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk başka bir yolcu tarafından ödeme adımında rezerve edilmiş.` });
        }
     }
 
@@ -113,6 +121,12 @@ const createReservation = async (req, res) => {
       status: 'active'
     });
 
+    // SET REDIS LOCKS
+    for (const seatReq of seats) {
+      const lockKey = `reservation:${tripId}:${seatReq.seatNumber}`;
+      await redisClient.setEx(lockKey, 600, req.user._id.toString()); // 10 minutes lock
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Koltuk 10 dakikalığına sizin adınıza başarıyla ayrıldı.',
@@ -141,6 +155,11 @@ const cancelReservation = async (req, res) => {
     }
 
     await Reservation.findByIdAndDelete(req.params.id);
+
+    // REMOVE REDIS LOCKS
+    for (const s of reservation.seats) {
+      await redisClient.del(`reservation:${reservation.trip}:${s.seatNumber}`);
+    }
 
     return res.status(200).json({
       success: true,
