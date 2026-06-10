@@ -33,10 +33,16 @@ const createReservation = async (req, res) => {
        }
 
        // REDIS LOCK CHECK
-       const lockKey = `reservation:${tripId}:${seatNum}`;
-       const isLocked = await redisClient.get(lockKey);
-       if (isLocked && isLocked !== req.user._id.toString()) {
-          return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk başka bir yolcu tarafından ödeme adımında rezerve edilmiş.` });
+       try {
+         if (redisClient.isOpen || redisClient.isReady) {
+           const lockKey = `reservation:${tripId}:${seatNum}`;
+           const isLocked = await redisClient.get(lockKey);
+           if (isLocked && isLocked !== req.user._id.toString()) {
+              return res.status(400).json({ success: false, message: `${seatNum} numaralı koltuk başka bir yolcu tarafından ödeme adımında rezerve edilmiş.` });
+           }
+         }
+       } catch (err) {
+         console.log("Redis Lock Check Error, geçiliyor.");
        }
     }
 
@@ -122,9 +128,15 @@ const createReservation = async (req, res) => {
     });
 
     // SET REDIS LOCKS
-    for (const seatReq of seats) {
-      const lockKey = `reservation:${tripId}:${seatReq.seatNumber}`;
-      await redisClient.setEx(lockKey, 600, req.user._id.toString()); // 10 minutes lock
+    try {
+      if (redisClient.isOpen || redisClient.isReady) {
+        for (const seatReq of seats) {
+          const lockKey = `reservation:${tripId}:${seatReq.seatNumber}`;
+          await redisClient.setEx(lockKey, 600, req.user._id.toString()); // 10 minutes lock
+        }
+      }
+    } catch (err) {
+      console.log("Redis SetEx Error, geçiliyor.");
     }
 
     return res.status(201).json({
@@ -157,8 +169,14 @@ const cancelReservation = async (req, res) => {
     await Reservation.findByIdAndDelete(req.params.id);
 
     // REMOVE REDIS LOCKS
-    for (const s of reservation.seats) {
-      await redisClient.del(`reservation:${reservation.trip}:${s.seatNumber}`);
+    try {
+      if (redisClient.isOpen || redisClient.isReady) {
+        for (const s of reservation.seats) {
+          await redisClient.del(`reservation:${reservation.trip}:${s.seatNumber}`);
+        }
+      }
+    } catch (err) {
+      console.log("Redis Del Error, geçiliyor.");
     }
 
     return res.status(200).json({
