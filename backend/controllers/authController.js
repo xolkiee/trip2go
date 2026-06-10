@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { sendToQueue } = require('../services/rabbitmq');
 
 // JWT için kullanılacak gizli anahtar
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-trip2go-key-2026';
@@ -34,6 +35,15 @@ const registerUser = async (req, res) => {
     });
 
     console.log('Yeni kullanıcı kayıt oldu:', email);
+
+    // RabbitMQ ile e-posta bildirimi gönder (Asenkron)
+    sendToQueue('email_notifications', {
+      type: 'welcome_email',
+      userId: newUser._id,
+      email: newUser.email,
+      firstName: newUser.firstName,
+      timestamp: new Date()
+    });
 
     res.status(201).json({
       success: true,
@@ -141,6 +151,15 @@ const forgotPassword = async (req, res) => {
     await user.save();
     
     console.log(`Şifre sıfırlama talebi alındı: ${email}. Token: ${resetToken}`);
+
+    // RabbitMQ ile şifre sıfırlama e-postası gönder (Asenkron)
+    sendToQueue('email_notifications', {
+      type: 'password_reset',
+      userId: user._id,
+      email: user.email,
+      resetToken: resetToken,
+      timestamp: new Date()
+    });
 
     res.status(200).json({
       success: true,

@@ -14,6 +14,7 @@ const connectRabbitMQ = async () => {
     // Kuyrukları önceden tanımla (Eğer yoksa oluşturur)
     await channel.assertQueue('ticket_notifications', { durable: true });
     await channel.assertQueue('ticket_refunds', { durable: true });
+    await channel.assertQueue('email_notifications', { durable: true });
 
   } catch (error) {
     console.error('RabbitMQ Bağlantı Hatası:', error);
