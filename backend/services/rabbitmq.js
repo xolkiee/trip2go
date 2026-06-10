@@ -6,6 +6,11 @@ dotenv.config();
 let channel = null;
 
 const connectRabbitMQ = async () => {
+  if (process.env.VERCEL && !process.env.RABBITMQ_URL) {
+    console.log('Vercel ortamında RabbitMQ pas geçiliyor...');
+    return;
+  }
+  
   try {
     const connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost:5672');
     channel = await connection.createChannel();

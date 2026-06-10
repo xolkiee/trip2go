@@ -11,10 +11,16 @@ redisClient.on('error', (err) => console.log('Redis Client Error', err));
 redisClient.on('connect', () => console.log('Redis sunucusuna başarıyla bağlanıldı.'));
 
 (async () => {
+  // Eğer Vercel ortamındaysak ve REDIS_URL yoksa bağlanmaya çalışma (Crash'i önler)
+  if (process.env.VERCEL && !process.env.REDIS_URL) {
+      console.log('Vercel ortamında Redis pas geçiliyor...');
+      return;
+  }
+  
   try {
     await redisClient.connect();
   } catch (err) {
-    console.log('Redis bağlantısı kurulamadı. (Eğer lokalde test ediyorsanız Docker üzerinden Redis sunucusunu ayağa kaldırdığınıza emin olun).');
+    console.log('Redis bağlantısı kurulamadı. Lokal test için Docker kullanımını unutmayın.');
   }
 })();
 
