@@ -77,6 +77,30 @@ app.get('/', (req, res) => {
   res.send('Trip2Go API Başarıyla Çalışıyor!');
 });
 
+app.get('/api/test-redis', async (req, res) => {
+  try {
+    const redisClient = require('./config/redis');
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    await redisClient.set('test_key', 'test_value');
+    const value = await redisClient.get('test_key');
+    res.json({ 
+      success: true, 
+      message: 'Redis is working!', 
+      value, 
+      hasUrl: !!process.env.REDIS_URL 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: err.message, 
+      stack: err.stack, 
+      hasUrl: !!process.env.REDIS_URL 
+    });
+  }
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
