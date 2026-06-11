@@ -153,8 +153,8 @@ const getLocations = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get Locations Hatası:', error);
-    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+    console.error('Location Error:', error);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.', error: error.message, stack: error.stack });
   }
 };
 
