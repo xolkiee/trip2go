@@ -80,14 +80,27 @@ app.get('/', (req, res) => {
 app.get('/api/test-redis', async (req, res) => {
   try {
     const redisClient = require('./config/redis');
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
+    
+    // Serverless TCP Socket Reconnection Hack
+    try {
+      if (!redisClient.isOpen) {
+        await redisClient.connect();
+      }
+      await redisClient.ping();
+    } catch (err) {
+      if (err.message.includes('Socket closed unexpectedly') || err.message.includes('Connection timeout')) {
+        await redisClient.disconnect().catch(() => {});
+        await redisClient.connect();
+      } else {
+        throw err;
+      }
     }
+
     await redisClient.set('test_key', 'test_value');
     const value = await redisClient.get('test_key');
     res.json({ 
       success: true, 
-      message: 'Redis is working!', 
+      message: 'Redis is working after ping/reconnect hack!', 
       value, 
       hasUrl: !!process.env.REDIS_URL 
     });
