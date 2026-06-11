@@ -44,17 +44,23 @@ const getTripReviews = async (req, res) => {
   try {
     const tripId = req.params.id;
     const cacheKey = `reviews_trip_${tripId}`;
+    let cachedReviews = null;
 
-    if (redisClient.isOpen || redisClient.isReady) {
-      const cachedReviews = await redisClient.get(cacheKey);
-      if (cachedReviews) {
-        console.log(`[Redis] Yorumlar cache'ten getirildi: ${cacheKey}`);
-        return res.status(200).json({
-          success: true,
-          count: JSON.parse(cachedReviews).length,
-          data: JSON.parse(cachedReviews)
-        });
+    try {
+      if (redisClient.isOpen || redisClient.isReady) {
+        cachedReviews = await redisClient.get(cacheKey);
       }
+    } catch (err) {
+      console.warn('Redis Get Hatası:', err.message);
+    }
+
+    if (cachedReviews) {
+      console.log(`[Redis] Yorumlar cache'ten getirildi: ${cacheKey}`);
+      return res.status(200).json({
+        success: true,
+        count: JSON.parse(cachedReviews).length,
+        data: JSON.parse(cachedReviews)
+      });
     }
 
     const Trip = require('../models/Trip');

@@ -119,25 +119,33 @@ const getLocations = async (req, res) => {
 
     const cacheKey = 'locations_cache';
     
-    // Redis cache kontrolü
-    if (redisClient.isOpen || redisClient.isReady) {
-      const cachedLocations = await redisClient.get(cacheKey);
-      if (cachedLocations) {
-        console.log('Lokasyonlar Redis önbelleğinden getirildi.');
-        return res.status(200).json({
-          success: true,
-          count: JSON.parse(cachedLocations).length,
-          data: JSON.parse(cachedLocations)
-        });
+    let cachedLocations = null;
+    try {
+      if (redisClient.isOpen || redisClient.isReady) {
+        cachedLocations = await redisClient.get(cacheKey);
       }
+    } catch (err) {
+      console.warn('Redis Get Hatası (Göz ardı ediliyor):', err.message);
+    }
+    
+    if (cachedLocations) {
+      console.log('Lokasyonlar Redis önbelleğinden getirildi.');
+      return res.status(200).json({
+        success: true,
+        count: JSON.parse(cachedLocations).length,
+        data: JSON.parse(cachedLocations)
+      });
     }
 
     const locations = await Location.find().sort({ name: 1 });
     
-    // Redis cache'e kaydet (1 gün süreyle)
-    if (redisClient.isOpen || redisClient.isReady) {
-      await redisClient.setEx(cacheKey, 86400, JSON.stringify(locations));
-      console.log('Lokasyonlar veritabanından çekilip Redis önbelleğine kaydedildi.');
+    try {
+      if (redisClient.isOpen || redisClient.isReady) {
+        await redisClient.setEx(cacheKey, 86400, JSON.stringify(locations));
+        console.log('Lokasyonlar veritabanından çekilip Redis önbelleğine kaydedildi.');
+      }
+    } catch (err) {
+      console.warn('Redis Set Hatası (Göz ardı ediliyor):', err.message);
     }
 
     // Frontend'in kolay kullanımı için id formatını maple
