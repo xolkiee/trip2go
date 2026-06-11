@@ -26,7 +26,10 @@ const connectRabbitMQ = async () => {
   }
 };
 
-const sendToQueue = (queueName, data) => {
+const sendToQueue = async (queueName, data) => {
+  if (!channel) {
+    await connectRabbitMQ();
+  }
   if (!channel) {
     console.error('RabbitMQ kanalı hazır değil. Mesaj gönderilemedi.');
     return;
@@ -36,6 +39,11 @@ const sendToQueue = (queueName, data) => {
 };
 
 const getChannel = () => channel;
+
+// Vercel'de `app.listen()` çalışmadığı için, dosya yüklendiğinde otomatik bağlan
+(async () => {
+  await connectRabbitMQ();
+})();
 
 module.exports = {
   connectRabbitMQ,
